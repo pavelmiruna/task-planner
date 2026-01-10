@@ -4,23 +4,17 @@ const router = express.Router();
 const Team = require("../models/Team");
 const User = require("../models/User");
 
-// Helpers (ajută să nu repeți include-ul peste tot)
+// include: doar 3 atribute
 const membersInclude = [
   {
     model: User,
     as: "members",
-    // Ajustează "attributes" după ce câmpuri ai în User
-    // dacă nu ai "name", schimbă cu "username" / "fullName" etc.
     attributes: ["id", "username", "email"],
-    through: { attributes: [] }, // nu trimitem join table fields
+    through: { attributes: [] },
   },
 ];
 
-/**
- * GET /teams
- * Returnează toate echipele + lista de membri
- * Opțional: ?projectId=1
- */
+// GET /api/teams
 router.get("/", async (req, res, next) => {
   try {
     const where = {};
@@ -38,10 +32,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-/**
- * GET /teams/:id
- * Returnează o echipă + membri
- */
+// ✅ GET /api/teams/:id  (asta îți trebuie ca să nu mai fie 404)
 router.get("/:id", async (req, res, next) => {
   try {
     const team = await Team.findByPk(req.params.id, { include: membersInclude });
@@ -53,11 +44,7 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-/**
- * POST /teams
- * Creează echipă
- * Body: { name, description, projectId? }
- */
+// POST /api/teams
 router.post("/", async (req, res, next) => {
   try {
     const created = await Team.create({
@@ -66,19 +53,14 @@ router.post("/", async (req, res, next) => {
       projectId: req.body.projectId ?? null,
     });
 
-    // întoarcem echipa creată cu members (va fi listă goală)
     const full = await Team.findByPk(created.id, { include: membersInclude });
-
     res.status(201).json({ success: true, data: full });
   } catch (error) {
     next(error);
   }
 });
 
-/**
- * PUT /teams/:id
- * Actualizează echipă
- */
+// PUT /api/teams/:id
 router.put("/:id", async (req, res, next) => {
   try {
     const team = await Team.findByPk(req.params.id);
@@ -97,10 +79,7 @@ router.put("/:id", async (req, res, next) => {
   }
 });
 
-/**
- * DELETE /teams/:id
- * Șterge echipă
- */
+// DELETE /api/teams/:id
 router.delete("/:id", async (req, res, next) => {
   try {
     const deleted = await Team.destroy({ where: { id: req.params.id } });
@@ -112,22 +91,15 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
-/**
- * PUT /teams/:id/members
- * Setează complet lista de membri (înlocuiește tot)
- * Body: { userIds: [1,2,3] }
- */
+// ✅ PUT /api/teams/:id/members
 router.put("/:id/members", async (req, res, next) => {
   try {
     const team = await Team.findByPk(req.params.id);
     if (!team) return res.status(404).json({ error: "Team not found" });
 
     const userIds = Array.isArray(req.body.userIds) ? req.body.userIds : [];
-
-    // ia userii existenți din DB
     const users = await User.findAll({ where: { id: userIds } });
 
-    // Sequelize magic method (as: "members")
     await team.setMembers(users);
 
     const updated = await Team.findByPk(req.params.id, { include: membersInclude });
@@ -137,10 +109,7 @@ router.put("/:id/members", async (req, res, next) => {
   }
 });
 
-/**
- * POST /teams/:id/members/:userId
- * Adaugă un singur membru
- */
+// POST /api/teams/:id/members/:userId
 router.post("/:id/members/:userId", async (req, res, next) => {
   try {
     const team = await Team.findByPk(req.params.id);
@@ -158,10 +127,7 @@ router.post("/:id/members/:userId", async (req, res, next) => {
   }
 });
 
-/**
- * DELETE /teams/:id/members/:userId
- * Șterge un membru
- */
+// DELETE /api/teams/:id/members/:userId
 router.delete("/:id/members/:userId", async (req, res, next) => {
   try {
     const team = await Team.findByPk(req.params.id);
