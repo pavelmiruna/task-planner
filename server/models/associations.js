@@ -4,6 +4,7 @@ const Project = require("./Project");
 const Task = require("./Task");
 const Comment = require("./Comment");
 const Notification = require("./Notification");
+const TeamMember = require("./TeamMember");
 
 // User ↔ Manager
 User.belongsTo(User, { as: "manager", foreignKey: "managerId" });
@@ -45,4 +46,19 @@ Notification.belongsTo(Task, { as: "task", foreignKey: "taskId" });
 Notification.belongsTo(Project, { as: "project", foreignKey: "projectId" });
 Notification.belongsTo(User, { as: "sender", foreignKey: "fromUserId" });
 
-module.exports = { User, Team, Project, Task, Comment, Notification };
+// Team ↔ User (many-to-many)
+Team.belongsToMany(User, {
+  through: TeamMember,
+  foreignKey: "teamId",
+  otherKey: "userId",
+  as: "members",
+});
+
+User.belongsToMany(Team, {
+  through: TeamMember,
+  foreignKey: "userId",
+  otherKey: "teamId",
+  as: "teams",
+});
+
+module.exports = { User, Team, Project, Task, Comment, Notification,TeamMember };
