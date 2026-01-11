@@ -2,7 +2,6 @@ const User = require("./User");
 const Team = require("./Team");
 const Project = require("./Project");
 const Task = require("./Task");
-const Comment = require("./Comment");
 const Notification = require("./Notification");
 const TeamMember = require("./TeamMember");
 
@@ -30,14 +29,6 @@ Task.belongsTo(User, { as: "user", foreignKey: "userId" });
 Team.hasMany(Task, { as: "teamTasks", foreignKey: "teamId" });
 Task.belongsTo(Team, { as: "team", foreignKey: "teamId" });
 
-// Task ↔ Comment
-Task.hasMany(Comment, { as: "comments", foreignKey: "taskId" });
-Comment.belongsTo(Task, { as: "task", foreignKey: "taskId" });
-
-// User ↔ Comment
-User.hasMany(Comment, { as: "comments", foreignKey: "userId" });
-Comment.belongsTo(User, { as: "user", foreignKey: "userId" });
-
 // User ↔ Notification
 User.hasMany(Notification, { as: "notifications", foreignKey: "userId" });
 Notification.belongsTo(User, { as: "user", foreignKey: "userId" });
@@ -61,4 +52,4 @@ User.belongsToMany(Team, {
   as: "teams",
 });
 
-module.exports = { User, Team, Project, Task, Comment, Notification, TeamMember };
+module.exports = { User, Team, Project, Task, Notification, TeamMember };

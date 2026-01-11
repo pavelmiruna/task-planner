@@ -8,10 +8,10 @@ const sequelize = require("./sequelize");
 const userRouter = require("./routes/userRouter");
 const taskRouter = require("./routes/taskRouter");
 const projectRouter = require("./routes/projectRouter");
-const commentRouter = require("./routes/commentRouter");
 const notificationRouter = require("./routes/notificationRouter");
 const teamRouter = require("./routes/teamRouter");
 const uploadRouter = require("./routes/uploadRouter");
+
 // Asociațiile între modele
 require("./models/associations");
 
@@ -37,17 +37,14 @@ app.get("/", (req, res) => {
 app.use("/api/users", userRouter);
 app.use("/api/tasks", taskRouter);
 app.use("/api/projects", projectRouter);
-app.use("/api/comments", commentRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/teams", teamRouter);
 
-// Middleware de erori (trebuie pus DUPĂ rute!)
-app.use(errorHandler);
-
 //Cloudinary
-
 app.use("/api/upload", uploadRouter);
 
+// Middleware de erori (trebuie pus DUPĂ rute!)
+app.use(errorHandler);
 
 // Start server
 app.listen(PORT, async () => {
@@ -59,7 +56,7 @@ app.listen(PORT, async () => {
     if (process.env.NODE_ENV !== "production") {
       await sequelize.sync({ alter: true });
       console.log("🛠️ Models synchronized (development mode)");
-    }else {
+    } else {
       console.log("🏢 Production mode - no schema sync");
     }
 

@@ -5,7 +5,7 @@ const Notification = sequelize.define("Notification", {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   message: { type: DataTypes.TEXT, allowNull: false },
   type: {
-    type: DataTypes.ENUM("TASK", "PROJECT", "COMMENT", "SYSTEM"),
+    type: DataTypes.ENUM("TASK", "PROJECT", "SYSTEM"),
     defaultValue: "SYSTEM",
   },
   isRead: { type: DataTypes.BOOLEAN, defaultValue: false },
