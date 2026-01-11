@@ -1,0 +1,96 @@
+.not-page { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+.not-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 16px; margin-bottom: 14px;
+}
+.not-head h2 { margin: 0; font-size: 28px; }
+.sub { margin: 6px 0 0; color: #666; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.btn {
+  border: 1px solid #e6e6e6; background: #fff; padding: 10px 12px;
+  border-radius: 12px; cursor: pointer;
+}
+.btn:hover { background: #fafafa; }
+.btn.primary { background: #111; color: #fff; border-color: #111; }
+.btn.primary:hover { background: #000; }
+
+.not-list { display: grid; gap: 12px; }
+
+.not-card {
+  border: 1px solid #eee;
+  border-radius: 18px;
+  padding: 14px;
+  background: #fff;
+}
+
+.not-card.unread {
+  border-color: #e8e6ff;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+}
+
+.top { display: flex; justify-content: space-between; gap: 12px; }
+.title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.title { margin: 0; font-size: 18px; }
+
+.msg { margin: 8px 0 0; color: #555; }
+
+.meta { margin-top: 10px; color: #777; font-size: 13px; }
+
+.menu { display: flex; gap: 6px; }
+
+.icon-btn {
+  border: 1px solid #eee; background: #fff;
+  border-radius: 12px; padding: 8px 10px; cursor: pointer;
+}
+.icon-btn:hover { background: #fafafa; }
+.icon-btn.danger:hover { background: #fff5f5; border-color: #ffd6d6; }
+
+.nbadge {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid #eee;
+  background: #fafafa;
+}
+.nbadge.info { background: #eff6ff; border-color: #dbeafe; }
+.nbadge.success { background: #f0fdf4; border-color: #bbf7d0; }
+.nbadge.warning { background: #fffbeb; border-color: #fde68a; }
+
+.dot {
+  width:  10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #6d6aff;
+  display: inline-block;
+}
+
+.state, .empty {
+  border: 1px dashed #e6e6e6;
+  border-radius: 18px;
+  padding: 22px;
+  text-align: center;
+  background: #fff;
+  color: #444;
+}
+
+.error {
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff5f5;
+  border: 1px solid #ffd6d6;
+  color: #7a1f1f;
+}
+
+.spinner {
+  width: 22px; height: 22px;
+  border: 3px solid #eee; border-top-color: #111;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
