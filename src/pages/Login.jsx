@@ -18,14 +18,16 @@ export default function Login() {
         ? { email: emailOrUsername, password }
         : { username: emailOrUsername, password };
 
-      const res = await api.post("/auth/login", payload);
-      localStorage.setItem("token", res.data.token);
+        const res = await api.post("/auth/login", payload);
+        const token = res?.data?.data?.token;
 
-      const me = await api.get("/auth/me");
-      const role = me.data.user.role;
+        localStorage.setItem("token", token);
 
-      localStorage.setItem("role", role);
-      localStorage.setItem("userId", String(me.data.user.id));
+        const me = await api.get("/auth/me");
+        const role = me?.data?.data?.role;
+        localStorage.setItem("role", String(role || "").toLowerCase());
+        localStorage.setItem("userId", String(me?.data?.data?.id));
+
 
       if (role === "admin") navigate("/admin/users");
       else if (role === "manager") navigate("/manager/tasks");

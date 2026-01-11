@@ -34,7 +34,7 @@ function App() {
       <Shell>
         <Routes>
           {/* / -> dashboard dacă e logat, altfel login */}
-          <Route path="/" element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* public */}
           <Route path="/login" element={<Login />} />
@@ -49,7 +49,7 @@ function App() {
           <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
 
           {/* fallback */}
-          <Route path="*" element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Shell>
     </Router>
