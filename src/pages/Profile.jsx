@@ -14,29 +14,25 @@ export default function Profile() {
   const [success, setSuccess] = useState("");
 
   async function loadProfile() {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
-      setUser(null);
-      setDraft(empty);
-      setError("");
-      return;
-    }
-
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
+      // ✅ ia user-ul logat din token
       const res = await api.get("/auth/me");
-      const me = res?.data?.user;
+      const me = res?.data?.data;
 
-      if (!me) {
+      if (!me?.id) {
         setUser(null);
         setDraft(empty);
         setError("Nu am putut identifica utilizatorul logat.");
         return;
       }
+
+      // ✅ ținem userId/role sincron (optional, dar util)
+      localStorage.setItem("userId", String(me.id));
+      localStorage.setItem("role", String(me.role || "").toLowerCase());
 
       setUser(me);
       setDraft({
@@ -45,13 +41,13 @@ export default function Profile() {
         phone: me.phone ?? "",
         role: me.role ?? "",
       });
-
-      // opțional: sincronizează userId/role în localStorage (ca să nu rămână vechi)
-      localStorage.setItem("userId", String(me.id));
-      localStorage.setItem("role", String(me.role || ""));
     } catch (err) {
       console.error("Profile load error:", err);
-      setError("Nu am putut încărca profilul.");
+      setUser(null);
+      setDraft(empty);
+
+      // dacă token e invalid, interceptorul din api.js te duce la /login
+      setError("Nu am putut identifica utilizatorul logat.");
     } finally {
       setLoading(false);
     }
@@ -79,7 +75,7 @@ export default function Profile() {
     }
 
     if (!user?.id) {
-      setError("Nu am un user logat.");
+      setError("Nu am putut identifica utilizatorul logat.");
       return;
     }
 
@@ -88,22 +84,24 @@ export default function Profile() {
     setSuccess("");
 
     try {
+      // ✅ update pe /users/:id (backend-ul tău are ruta asta)
       const res = await api.put(`/users/${user.id}`, {
         username: draft.username.trim(),
         email: draft.email.trim(),
         phone: draft.phone.trim() || null,
+        // role NU îl schimbăm din UI
       });
 
-      const updated = res?.data?.data ?? user;
-      setUser(updated);
+      const updated = res?.data?.data;
+      const merged = updated
+        ? { ...user, ...updated }
+        : { ...user, ...draft };
 
-      // păstrăm role (nu îl edităm din profil)
-      setDraft((d) => ({ ...d, role: updated.role ?? d.role }));
-
+      setUser(merged);
       setSuccess("Profil salvat ✔");
     } catch (err) {
       console.error("Profile save error:", err);
-      setError("Nu am putut salva profilul.");
+      setError(err?.response?.data?.message || "Nu am putut salva profilul.");
     } finally {
       setSaving(false);
     }
