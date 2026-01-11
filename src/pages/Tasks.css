@@ -9,19 +9,47 @@
 
 .actions { display: flex; gap: 10px; }
 
+/* ✅ toolbar structurat (ai .search + .filters în JSX) */
 .toolbar {
-  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
-  padding: 12px; border: 1px solid #eee; border-radius: 16px; background: #fff;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  background: #fff;
   margin-bottom: 14px;
 }
-.toolbar input {
-  width: min(420px, 90vw);
-  padding: 10px 12px; border-radius: 12px; border: 1px solid #e6e6e6; outline: none;
-}
-.toolbar select {
-  padding: 10px 12px; border-radius: 12px; border: 1px solid #e6e6e6; background: #fff;
+
+.toolbar .search {
+  flex: 1;
+  min-width: 220px;
 }
 
+.toolbar .search input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  outline: none;
+}
+
+.toolbar .filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toolbar select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  background: #fff;
+}
+
+/* butoane */
 .btn {
   border: 1px solid #e6e6e6; background: #fff; padding: 10px 12px;
   border-radius: 12px; cursor: pointer;
@@ -29,6 +57,7 @@
 .btn:hover { background: #fafafa; }
 .btn.primary { background: #111; color: #fff; border-color: #111; }
 .btn.primary:hover { background: #000; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .grid {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
@@ -48,25 +77,75 @@
   display: inline-flex; padding: 6px 10px; border-radius: 999px;
   font-size: 12px; border: 1px solid #eee; background: #fafafa;
 }
+
+/* status pills */
 .pill.status.todo { background: #f3f4f6; }
 .pill.status.doing { background: #fffbeb; border-color: #fde68a; }
 .pill.status.done { background: #f0fdf4; border-color: #bbf7d0; }
+.pill.status.paused { background: #eef2ff; border-color: #c7d2fe; }
+
+/* priority pills */
 .pill.prio.low { background: #eff6ff; border-color: #dbeafe; }
 .pill.prio.medium { background: #f5f5f5; }
 .pill.prio.high { background: #fff5f5; border-color: #ffd6d6; }
+/* ✅ lipsea urgent */
+.pill.prio.urgent { background: #fff1f2; border-color: #fecdd3; }
 
 .desc { margin: 12px 0 10px; color: #555; min-height: 42px; }
 
 .bottom { display: flex; gap: 10px; flex-wrap: wrap; color: #777; font-size: 13px; }
 .meta { border: 1px solid #eee; background: #fafafa; padding: 6px 8px; border-radius: 12px; }
 
-.menu { display: flex; gap: 6px; }
-.icon-btn {
-  border: 1px solid #eee; background: #fff; border-radius: 12px;
-  padding: 8px 10px; cursor: pointer;
+/* ✅ icon buttons mai mici (complete/close/delete) */
+.tasks-page .menu {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
-.icon-btn:hover { background: #fafafa; }
-.icon-btn.danger:hover { background: #fff5f5; border-color: #ffd6d6; }
+
+.tasks-page .icon-btn {
+  border: 1px solid #eee;
+  background: #fff;
+  padding: 6px 8px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1;
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tasks-page .icon-btn:hover { background: #fafafa; }
+.tasks-page .icon-btn.danger:hover { background: #fff5f5; border-color: #ffd6d6; }
+
+/* ✅ Assign row (dropdown + buton Assign) */
+.assign-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.assign-row select {
+  flex: 1;
+  min-width: 160px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  background: #fff;
+}
+
+@media (max-width: 560px) {
+  .assign-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .assign-row .btn {
+    width: 100%;
+  }
+}
 
 .state, .empty {
   border: 1px dashed #e6e6e6; border-radius: 18px; padding: 22px;
@@ -103,33 +182,6 @@
   padding: 10px 12px; border-radius: 12px; border: 1px solid #e6e6e6; outline: none;
 }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-/* ✅ icon buttons mai mici (done / edit / delete) */
-.tasks-page .menu {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.tasks-page .icon-btn {
-  padding: 6px 8px;      /* mai mic decât 8px 10px */
-  border-radius: 10px;   /* mai mic decât 12px */
-  font-size: 13px;       /* emoji + icon mai compacte */
-  line-height: 1;
-  min-width: 34px;       /* păstrează uniform */
-  min-height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tasks-page .icon-btn:hover {
-  background: #fafafa;
-}
-
-.tasks-page .icon-btn.danger:hover {
-  background: #fff5f5;
-  border-color: #ffd6d6;
-}
 
 @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
 

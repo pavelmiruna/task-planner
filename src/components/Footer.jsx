@@ -1,7 +1,12 @@
+import { Link, useLocation } from "react-router-dom";
 import "./Footer.css";
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const location = useLocation();
+
+  // dacă vrei să NU apară pe login (în caz că nu ai hide în App)
+  if (location.pathname === "/login") return null;
 
   return (
     <footer className="footer">
@@ -15,9 +20,9 @@ export default function Footer() {
         <div className="right">
           <span className="muted">© {year}</span>
           <span className="sep">•</span>
-          <a className="link" href="/projects">Projects</a>
-          <a className="link" href="/teams">Teams</a>
-          <a className="link" href="/tasks">Tasks</a>
+          <Link className="link" to="/projects">Projects</Link>
+          <Link className="link" to="/teams">Teams</Link>
+          <Link className="link" to="/tasks">Tasks</Link>
         </div>
       </div>
     </footer>

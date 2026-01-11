@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Projects from "./pages/Projects";
 import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
@@ -7,25 +7,88 @@ import Tasks from "./pages/Tasks";
 import Footer from "./components/Footer";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
+import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
+
+function Shell({ children }) {
+  const location = useLocation();
+  const hideLayout = location.pathname === "/login";
+
+  return (
+    <div className="app-shell">
+      {!hideLayout && <Navbar />}
+      <main className="app-main">{children}</main>
+      {!hideLayout && <Footer />}
+    </div>
+  );
+}
 
 function App() {
   return (
     <Router>
-      <div className="app-shell">
-        <Navbar/>
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={<Dashboard/>} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/teams" element={<Teams />} />
-            <Route path = "/tasks" element = {<Tasks/>}/>
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path = "/profile" element = {<Profile/>}/>
-          </Routes>
-        </main>
-        <Footer/>
-      </div>
+      <Shell>
+        <Routes>
+          {/* default -> login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+
+          {/* public */}
+          <Route path="/login" element={<Login />} />
+
+          {/* protected */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <ProtectedRoute>
+                <Projects />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teams"
+            element={
+              <ProtectedRoute>
+                <Teams />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tasks"
+            element={
+              <ProtectedRoute>
+                <Tasks />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* fallback */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Shell>
     </Router>
   );
 }

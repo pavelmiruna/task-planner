@@ -164,3 +164,23 @@
     background: rgba(0,0,0,0.25);
   }
 }
+/* ✅ Logout button să arate ca un link */
+.link.logout {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #444;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit; /* ca să nu arate diferit ca button */
+}
+
+.link.logout:hover {
+  background: #fafafa;
+  border-color: #eee;
+}
+
+.link.logout:active {
+  transform: translateY(1px);
+}
+
