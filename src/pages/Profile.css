@@ -14,7 +14,7 @@
 }
 @media (max-width: 900px) { .profile-grid { grid-template-columns: 1fr; } }
 
-.card {
+.info-card {
   border: none;
   border-radius: 22px;
   padding: 16px;

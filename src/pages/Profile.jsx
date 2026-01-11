@@ -132,7 +132,7 @@ export default function Profile() {
 
       {!loading && !error && user && (
         <div className="profile-grid">
-          <section className="card">
+          <section className="info-card">
             <div className="avatar">{(user?.username?.[0] || "U").toUpperCase()}</div>
             <div className="who">
               <div className="name">{user.username}</div>

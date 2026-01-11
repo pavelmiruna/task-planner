@@ -57,9 +57,9 @@
   display: inline-flex; padding: 6px 10px; border-radius: 999px;
   font-size: 12px; border: 1px solid #eee; background: #fafafa;
 }
-.pill.admin { background: #eef2ff; border-color: #7e97fd; }
-.pill.manager { background: #fffbeb; border-color: #fad648; }
-.pill.executor { background: #f0fdf4; border-color: #7cf8a7; }
+.pill.admin { background: #7e97fd; border-color: #5979fb; }
+.pill.manager { background: #fad648; border-color: #fad02a; }
+.pill.executor { background: #5ffd96; border-color: #42fe84; }
 
 .chip {
   border: 1px solid #eee; background: #fafafa; padding: 6px 8px;
