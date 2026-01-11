@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const authMiddleware = require("../middleware/authMiddleware");
+const requireRole = require("../middleware/requireRole");
 
 const router = express.Router();
 
@@ -57,8 +58,8 @@ router.get("/me", authMiddleware, async (req, res, next) => {
  * ⚠️ Atenție: conform cerințelor, ideal doar admin creează useri.
  * Acum e "public register". Dacă vrei doar admin, îți modific imediat.
  */
-router.post("/register", async (req, res, next) => {
-  try {
+router.post("/register", authMiddleware, requireRole("admin"), async (req, res, next) => { 
+     try {
     const { username, email, password, role } = req.body;
 
     if (!username?.trim()) return res.status(400).json({ message: "Username este obligatoriu." });

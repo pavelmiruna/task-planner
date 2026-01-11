@@ -1,6 +1,8 @@
 const express = require("express");
 const Notification = require("../models/Notification");
 const router = express.Router();
+const authMiddleware = require("../middleware/authMiddleware");
+router.use(authMiddleware);
 
 // GET - notificări (cu filtrare după userId / unread)
 router.get("/", async (req, res, next) => {

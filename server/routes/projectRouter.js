@@ -1,9 +1,11 @@
 const express = require("express");
 const Project = require("../models/Project");
 const router = express.Router();
+const authMiddleware = require("../middleware/authMiddleware");
+router.use(authMiddleware);
 
 // GET - proiecte (cu filtrare)
-router.get("/", async (req, res) => {
+router.get("/", async (req, res,next) => {
   try {
     const where = {};
     if (req.query.status) where.status = req.query.status;
@@ -16,7 +18,7 @@ router.get("/", async (req, res) => {
 });
 
 // POST - creare proiect
-router.post("/", async (req, res) => {
+router.post("/", async (req, res,next) => {
   try {
     const project = await Project.create(req.body);
     res.status(201).json({ success: true, data: project });
@@ -26,7 +28,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT - actualizare proiect
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req, res,next) => {
   try {
     const project = await Project.findByPk(req.params.id);
     if (!project) return res.status(404).json({ error: "Project not found" });
@@ -38,7 +40,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE - ștergere proiect
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res,next) => {
   try {
     const deleted = await Project.destroy({ where: { id: req.params.id } });
     if (!deleted) return res.status(404).json({ error: "Project not found" });
