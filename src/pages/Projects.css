@@ -332,4 +332,37 @@ select {
 @media (max-width: 560px) {
   .row { grid-template-columns: 1fr; }
 }
+@media (max-width: 560px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .search {
+    width: 100%;
+  }
+
+  .search input {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .filters {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .filters select {
+    flex: 1 1 140px; /* se aranjează frumos pe 1-2 coloane */
+    min-width: 0;
+  }
+
+  .filters .btn {
+    width: 100%;
+  }
+}
+
 
