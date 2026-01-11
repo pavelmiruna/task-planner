@@ -183,6 +183,41 @@
 }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+/* === Assign row (manager/admin) === */
+.assign-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.assign-select {
+  flex: 1;
+  min-width: 220px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  background: #fff;
+}
+
+/* Mobile: filtrele + assign să se așeze frumos */
+@media (max-width: 560px) {
+  .filters select {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .assign-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .assign-row .btn {
+    width: 100%;
+  }
+}
+
 @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
 
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }

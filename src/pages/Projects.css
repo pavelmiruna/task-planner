@@ -37,7 +37,7 @@
   padding:12px;
   border:1px solid #eee;
   border-radius:16px;
-  background:linear-gradient(135deg,#9b7cff,#6affc3);
+  background:linear-gradient(135deg,#9b7cff,#6affc3) !important;
   margin-bottom:16px;
 }
 

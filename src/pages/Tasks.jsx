@@ -33,11 +33,6 @@ const emptyDraft = {
   teamId: "",
 };
 
-function toDateInputValue(date) {
-  if (!date) return "";
-  return String(date).slice(0, 10);
-}
-
 function formatDate(date) {
   if (!date) return "—";
   const d = new Date(date);
@@ -50,7 +45,7 @@ function statusPill(status) {
   if (s === "COMPLETED") return "pill status done";
   if (s === "CLOSED") return "pill status paused";
   if (s === "PENDING") return "pill status doing";
-  return "pill status todo"; // OPEN
+  return "pill status todo";
 }
 
 function prioPill(priority) {
@@ -98,7 +93,6 @@ export default function Tasks() {
   const STATUS_UI = isExecutor ? STATUS_UI_EXECUTOR : STATUS_UI_ALL;
 
   const [tasks, setTasks] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -106,6 +100,9 @@ export default function Tasks() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+
+  // ✅ NEW: executor filter (manager/admin)
+  const [executorFilter, setExecutorFilter] = useState("all"); // "all" | "<id>"
 
   // modal create (doar manager/admin)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,7 +113,7 @@ export default function Tasks() {
   const [teams, setTeams] = useState([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
 
-  // executors dropdown (pentru assign)
+  // executors dropdown (pentru assign + filtrare)
   const [executors, setExecutors] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
@@ -162,7 +159,6 @@ export default function Tasks() {
       setExecutors(execs);
     } catch (err) {
       console.error("Eroare la preluare users/executors:", err);
-      // nu blocăm pagina dacă nu merge users
     } finally {
       setUsersLoading(false);
     }
@@ -215,9 +211,16 @@ export default function Tasks() {
       const okStatus = statusFilter === "all" || st === statusFilter;
       const okPrio = priorityFilter === "all" || pr === priorityFilter;
 
-      return okQuery && okStatus && okPrio;
+      // ✅ NEW: filter by executor (manager/admin)
+      const assignedId = getAssignedId(t);
+      const okExecutor =
+        !isManagerOrAdmin ||
+        executorFilter === "all" ||
+        String(assignedId ?? "") === String(executorFilter);
+
+      return okQuery && okStatus && okPrio && okExecutor;
     });
-  }, [tasks, query, statusFilter, priorityFilter]);
+  }, [tasks, query, statusFilter, priorityFilter, executorFilter, isManagerOrAdmin]);
 
   function openCreate() {
     if (!isManagerOrAdmin) return;
@@ -320,8 +323,6 @@ export default function Tasks() {
     }
 
     try {
-      // presupunere: backend așteaptă { userId }
-      // dacă backend așteaptă alt nume, schimbă aici.
       await api.put(`/tasks/${t.id}/assign`, { userId: executorId });
       await fetchTasks();
     } catch (err) {
@@ -381,12 +382,30 @@ export default function Tasks() {
             ))}
           </select>
 
+          {/* ✅ NEW: executor dropdown filter (manager/admin) */}
+          {isManagerOrAdmin && (
+            <select
+              value={executorFilter}
+              onChange={(e) => setExecutorFilter(e.target.value)}
+              disabled={usersLoading}
+              title="Filtrează după executant"
+            >
+              <option value="all">Executant</option>
+              {executors.map((u) => (
+                <option key={u.id} value={String(u.id)}>
+                  {u.username} ({u.email})
+                </option>
+              ))}
+            </select>
+          )}
+
           <button
             className="btn"
             onClick={() => {
               setQuery("");
               setStatusFilter("all");
               setPriorityFilter("all");
+              setExecutorFilter("all");
             }}
           >
             Reset
@@ -487,8 +506,7 @@ export default function Tasks() {
                   <span className="meta">Project: {t.projectId ?? "—"}</span>
 
                   <span className="meta">
-                    Team:{" "}
-                    {t.teamId ? teamById.get(String(t.teamId))?.name ?? `#${t.teamId}` : "—"}
+                    Team: {t.teamId ? teamById.get(String(t.teamId))?.name ?? `#${t.teamId}` : "—"}
                   </span>
 
                   <span className="meta">Due: {formatDate(t.dueDate)}</span>
