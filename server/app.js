@@ -10,7 +10,7 @@ const taskRouter = require("./routes/taskRouter");
 const projectRouter = require("./routes/projectRouter");
 const notificationRouter = require("./routes/notificationRouter");
 const teamRouter = require("./routes/teamRouter");
-const uploadRouter = require("./routes/uploadRouter");
+const authRouter = require("./routes/authRouter");
 
 // Asociațiile între modele
 require("./models/associations");
@@ -25,8 +25,6 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: "*" })); // Azure rulează frontendul de pe alt domeniu
 app.use(express.json());
 
-// Servim fișiere statice (ex: poze uploadate local, dacă există)
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Health check endpoint (Azure folosește asta pentru monitorizare)
 app.get("/", (req, res) => {
@@ -39,9 +37,9 @@ app.use("/api/tasks", taskRouter);
 app.use("/api/projects", projectRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/teams", teamRouter);
+app.use("/api/auth", authRouter);
 
-//Cloudinary
-app.use("/api/upload", uploadRouter);
+
 
 // Middleware de erori (trebuie pus DUPĂ rute!)
 app.use(errorHandler);
