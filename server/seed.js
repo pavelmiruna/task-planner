@@ -118,25 +118,26 @@ async function run() {
     // 6) ✅ Notificări (2 bucăți pentru tab-ul Notifications)
     // Dacă în model câmpul se numește altfel decât message/type/isRead, schimbă aici.
     await Notification.bulkCreate([
-      {
-        userId: users[0].id,        // destinatar: ana
-        fromUserId: users[1].id,    // sender: mihai
-        taskId: allTasks[0]?.id || null,
-        projectId: p1.id,
-        type: "TASK_ASSIGNED",
-        message: `Ai primit un task nou în proiectul "${p1.name}".`,
-        isRead: false,
-      },
-      {
-        userId: users[2].id,        // destinatar: ioana
-        fromUserId: users[3].id,    // sender: andrei
-        taskId: allTasks[2]?.id || null,
-        projectId: p2.id,
-        type: "PROJECT_UPDATE",
-        message: `Proiectul "${p2.name}" a fost actualizat. Verifică statusul.`,
-        isRead: false,
-      },
-    ]);
+  {
+    userId: users[0].id,        // destinatar: ana
+    fromUserId: users[1].id,    // sender: mihai
+    taskId: allTasks[0]?.id || null,
+    projectId: p1.id,
+    type: "TASK", // ✅
+    message: `Ai primit un task nou în proiectul "${p1.name}".`,
+    isRead: false,
+  },
+  {
+    userId: users[2].id,        // destinatar: ioana
+    fromUserId: users[3].id,    // sender: andrei
+    taskId: allTasks[2]?.id || null,
+    projectId: p2.id,
+    type: "PROJECT", // ✅
+    message: `Proiectul "${p2.name}" a fost actualizat. Verifică statusul.`,
+    isRead: false,
+  },
+]);
+
 
     // 7) Counts
     const teamCount = await Team.count();
