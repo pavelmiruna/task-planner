@@ -209,8 +209,14 @@ export default function Teams() {
       </div>
 
       <div className="toolbar">
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Caută echipă..." />
-      </div>
+  <div className="search">
+    <input 
+      value={query} 
+      onChange={(e) => setQuery(e.target.value)} 
+      placeholder="Caută echipă..." 
+    />
+  </div>
+</div>
 
       {loading && (
         <div className="state">

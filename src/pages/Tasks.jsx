@@ -254,39 +254,43 @@ export default function Tasks() {
       </div>
 
       <div className="toolbar">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Caută în descriere..."
-        />
+  <div className="search">
+    <input
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Caută în descriere..."
+    />
+  </div>
 
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          {STATUS_UI.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+  <div className="filters">
+    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+      {STATUS_UI.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
 
-        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-          {PRIORITY_UI.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+    <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+      {PRIORITY_UI.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
 
-        <button
-          className="btn"
-          onClick={() => {
-            setQuery("");
-            setStatusFilter("all");
-            setPriorityFilter("all");
-          }}
-        >
-          Reset
-        </button>
-      </div>
+    <button
+      className="btn"
+      onClick={() => {
+        setQuery("");
+        setStatusFilter("all");
+        setPriorityFilter("all");
+      }}
+    >
+      Reset
+    </button>
+  </div>
+</div>
 
       {loading && (
         <div className="state">
