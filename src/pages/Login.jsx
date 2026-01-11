@@ -1,39 +1,75 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../api/api";
 import "./Login.css";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const payload = emailOrUsername.includes("@")
-        ? { email: emailOrUsername, password }
-        : { username: emailOrUsername, password };
+        ? { email: emailOrUsername.trim(), password }
+        : { username: emailOrUsername.trim(), password };
 
-        const res = await api.post("/auth/login", payload);
-        const token = res?.data?.data?.token;
+      // ✅ login
+      const res = await api.post("/auth/login", payload);
+      const token = res?.data?.data?.token;
 
-        localStorage.setItem("token", token);
+      if (!token) {
+        throw new Error("Token missing from /auth/login response");
+      }
 
-        const me = await api.get("/auth/me");
-        const role = me?.data?.data?.role;
-        localStorage.setItem("role", String(role || "").toLowerCase());
-        localStorage.setItem("userId", String(me?.data?.data?.id));
+      localStorage.setItem("token", token);
 
+      // ✅ me (la tine returnează { data: {...} })
+      const meRes = await api.get("/auth/me");
+      const me = meRes?.data?.data;
 
-      if (role === "admin") navigate("/admin/users");
-      else if (role === "manager") navigate("/manager/tasks");
-      else navigate("/my-tasks");
+      const role = String(me?.role || "").toLowerCase();
+      const userId = me?.id;
+
+      localStorage.setItem("role", role);
+      localStorage.setItem("userId", String(userId || ""));
+
+      // ✅ dacă userul venea de pe o pagină protejată, îl ducem înapoi acolo
+      const from = location.state?.from?.pathname;
+
+      // IMPORTANT: rutele tale reale sunt /dashboard, /tasks, etc.
+      // Nu folosi /manager/tasks sau /my-tasks dacă nu le ai în App.jsx.
+      if (from && from !== "/login") {
+        navigate(from, { replace: true });
+        return;
+      }
+
+      // ✅ redirect simplu, compatibil cu App.jsx-ul tău
+      if (role === "admin") navigate("/admin/users", { replace: true });
+      else navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.message || "Login failed");
+      console.error("Login error:", err);
+      // backend trimite { message }, dar uneori ai { data: { message } } în alte rute
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Login failed";
+      setError(msg);
+
+      // dacă ceva a mers pe jumătate, curățăm
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("userId");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,6 +87,7 @@ export default function Login() {
               placeholder="ex: andrei@test.com"
               value={emailOrUsername}
               onChange={(e) => setEmailOrUsername(e.target.value)}
+              autoComplete="username"
             />
           </label>
 
@@ -62,11 +99,12 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
             />
           </label>
 
-          <button className="login-btn" type="submit">
-            Login
+          <button className="login-btn" type="submit" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </button>
 
           {error && <p className="login-error">{error}</p>}
