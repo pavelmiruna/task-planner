@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const bcrypt = require("bcryptjs");
 const sequelize = require("./sequelize");
 
 // Modele
@@ -8,13 +9,13 @@ const User = require("./models/User");
 const Project = require("./models/Project");
 const Task = require("./models/Task");
 const TeamMember = require("./models/TeamMember");
-const Notification = require("./models/Notification"); // ✅ ADĂUGAT
+const Notification = require("./models/Notification");
 
 // Asocieri (IMPORTANT)
 require("./models/associations");
 
-function pick(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+function daysFromNow(n) {
+  return new Date(Date.now() + n * 24 * 60 * 60 * 1000);
 }
 
 async function run() {
@@ -30,23 +31,55 @@ async function run() {
     console.log("🌱 Seeding...");
 
     // 1) Teams
-    const team1 = await Team.create({ name: "Team Alpha", description: "Echipa de test Alpha" });
-    const team2 = await Team.create({ name: "Team Beta", description: "Echipa de test Beta" });
+    const team1 = await Team.create({
+      name: "Team Alpha",
+      description: "Echipa de test Alpha",
+    });
 
-    // 2) Users
-    const users = await User.bulkCreate(
-      [
-        { username: "ana", email: "ana@test.com", role: "executor", password: "1234" },
-        { username: "mihai", email: "mihai@test.com", role: "manager", password: "1234" },
-        { username: "ioana", email: "ioana@test.com", role: "executor", password: "1234" },
-        { username: "andrei", email: "andrei@test.com", role: "admin", password: "1234" },
-      ],
-      { returning: true }
-    );
+    const team2 = await Team.create({
+      name: "Team Beta",
+      description: "Echipa de test Beta",
+    });
+
+    // 2) Users (admin + manager + executori cu managerId)
+    const passwordHash = await bcrypt.hash("1234", 10);
+
+    const admin = await User.create({
+      username: "andrei",
+      email: "andrei@test.com",
+      role: "admin",
+      password: passwordHash,
+    });
+
+    const manager = await User.create({
+      username: "mihai",
+      email: "mihai@test.com",
+      role: "manager",
+      password: passwordHash,
+    });
+
+    const executor1 = await User.create({
+      username: "ana",
+      email: "ana@test.com",
+      role: "executor",
+      password: passwordHash,
+      managerId: manager.id, // ✅ cerință
+    });
+
+    const executor2 = await User.create({
+      username: "ioana",
+      email: "ioana@test.com",
+      role: "executor",
+      password: passwordHash,
+      managerId: manager.id, // ✅ cerință
+    });
 
     // 3) Add members (many-to-many)
-    await team1.addMembers([users[0], users[1]]);
-    await team2.addMembers([users[2], users[3]]);
+    // Team Alpha: manager + ana
+    await team1.addMembers([manager, executor1]);
+
+    // Team Beta: admin + ioana (doar ca demo)
+    await team2.addMembers([admin, executor2]);
 
     // 4) Projects
     const p1 = await Project.create({
@@ -69,75 +102,84 @@ async function run() {
       startDate: new Date(),
     });
 
-    // 5) Tasks
-    const taskStatus = ["OPEN", "PENDING", "COMPLETED", "CLOSED"];
-    const taskPrio = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+    // 5) Tasks (conforme cu workflow-ul temei)
+    // OPEN -> nealocat (userId null, assignedAt null)
+    const t1 = await Task.create({
+      description: "Fă pagina Projects mai completă",
+      status: "OPEN",
+      priority: "HIGH",
+      progress: 0,
+      dueDate: daysFromNow(7),
+      projectId: p1.id,
+      teamId: team1.id,
+      userId: null,
+      assignedAt: null,
+      completedAt: null,
+    });
 
-    await Task.bulkCreate([
+    // PENDING -> alocat unui executor
+    const t2 = await Task.create({
+      description: "Adaugă dropdown de teams în Projects modal",
+      status: "PENDING",
+      priority: "MEDIUM",
+      progress: 20,
+      dueDate: daysFromNow(10),
+      projectId: p1.id,
+      teamId: team1.id,
+      userId: executor1.id,
+      assignedAt: new Date(),
+      completedAt: null,
+    });
+
+    // COMPLETED -> făcut de executor
+    const t3 = await Task.create({
+      description: "Fix notificări endpoints",
+      status: "COMPLETED",
+      priority: "URGENT",
+      progress: 100,
+      dueDate: daysFromNow(3),
+      projectId: p2.id,
+      teamId: team2.id,
+      userId: executor2.id,
+      assignedAt: daysFromNow(-2),
+      completedAt: new Date(),
+    });
+
+    // CLOSED -> manager a închis după completed
+    const t4 = await Task.create({
+      description: "Pregătește seed demo data pentru prezentare",
+      status: "CLOSED",
+      priority: "MEDIUM",
+      progress: 100,
+      dueDate: daysFromNow(1),
+      projectId: p2.id,
+      teamId: team2.id,
+      userId: executor2.id,
+      assignedAt: daysFromNow(-4),
+      completedAt: daysFromNow(-1),
+    });
+
+    // 6) Notifications (pentru tab-ul Notifications)
+    await Notification.bulkCreate([
       {
-        description: "Fă pagina Projects mai completă",
-        status: "OPEN",
-        priority: "HIGH",
-        progress: 0,
-        dueDate: new Date(Date.now() + 7 * 24 * 3600 * 1000),
+        userId: executor1.id,     // destinatar: ana
+        fromUserId: manager.id,   // sender: mihai (manager)
+        taskId: t2.id,
         projectId: p1.id,
-        teamId: team1.id,
+        type: "TASK",
+        message: `Ai primit un task nou în proiectul "${p1.name}".`,
+        isRead: false,
       },
       {
-        description: "Adaugă dropdown de teams în Projects modal",
-        status: "PENDING",
-        priority: "MEDIUM",
-        progress: 20,
-        dueDate: new Date(Date.now() + 10 * 24 * 3600 * 1000),
-        projectId: p1.id,
-        teamId: team1.id,
-      },
-      {
-        description: "Fix notificări endpoints",
-        status: "COMPLETED",
-        priority: "URGENT",
-        progress: 100,
-        completedAt: new Date(),
+        userId: executor2.id,     // destinatar: ioana
+        fromUserId: admin.id,     // sender: andrei (admin)
+        taskId: t3.id,
         projectId: p2.id,
-        teamId: team2.id,
-      },
-      {
-        description: "Seed demo data pentru prezentare",
-        status: pick(taskStatus),
-        priority: pick(taskPrio),
-        progress: 50,
-        dueDate: new Date(Date.now() + 3 * 24 * 3600 * 1000),
-        projectId: p2.id,
-        teamId: team2.id,
+        type: "PROJECT",
+        message: `Proiectul "${p2.name}" a fost actualizat. Verifică statusul.`,
+        isRead: false,
       },
     ]);
-
-    // ✅ Luăm task-urile ca să avem ID-uri sigur
-    const allTasks = await Task.findAll({ order: [["id", "ASC"]] });
-
-    // 6) ✅ Notificări (2 bucăți pentru tab-ul Notifications)
-    // Dacă în model câmpul se numește altfel decât message/type/isRead, schimbă aici.
-    await Notification.bulkCreate([
-  {
-    userId: users[0].id,        // destinatar: ana
-    fromUserId: users[1].id,    // sender: mihai
-    taskId: allTasks[0]?.id || null,
-    projectId: p1.id,
-    type: "TASK", // ✅
-    message: `Ai primit un task nou în proiectul "${p1.name}".`,
-    isRead: false,
-  },
-  {
-    userId: users[2].id,        // destinatar: ioana
-    fromUserId: users[3].id,    // sender: andrei
-    taskId: allTasks[2]?.id || null,
-    projectId: p2.id,
-    type: "PROJECT", // ✅
-    message: `Proiectul "${p2.name}" a fost actualizat. Verifică statusul.`,
-    isRead: false,
-  },
-]);
-
 
     // 7) Counts
     const teamCount = await Team.count();
@@ -147,7 +189,18 @@ async function run() {
     const notificationCount = await Notification.count();
 
     console.log("✅ Seed done!");
-    console.log({ teamCount, userCount, projectCount, taskCount, notificationCount });
+    console.log({
+      teamCount,
+      userCount,
+      projectCount,
+      taskCount,
+      notificationCount,
+      adminEmail: admin.email,
+      managerEmail: manager.email,
+      executor1Email: executor1.email,
+      executor2Email: executor2.email,
+      password: "1234",
+    });
 
     process.exit(0);
   } catch (e) {
