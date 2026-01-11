@@ -2,6 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -23,24 +24,16 @@ function signToken(user) {
   );
 }
 
-function getBearerToken(req) {
-  const header = req.headers.authorization || "";
-  return header.startsWith("Bearer ") ? header.slice(7) : null;
-}
-
 /**
  * GET /api/auth/me
- * - Returnează user-ul din token (și poate încărca din DB dacă vrei).
+ * - Returnează user-ul autentificat (din token)
+ * - authMiddleware pune payload-ul în req.user
  */
-router.get("/me", async (req, res) => {
-  const token = getBearerToken(req);
-  if (!token) return res.status(401).json({ message: "Missing token" });
-
+router.get("/me", authMiddleware, async (req, res, next) => {
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    // req.user vine din token (id, role, username, email)
+    const user = await User.findByPk(req.user.id);
 
-    // (opțional) încărcăm user din DB ca să avem date actuale
-    const user = await User.findByPk(payload.id);
     if (!user) return res.status(401).json({ message: "User not found" });
 
     return res.json({
@@ -52,8 +45,8 @@ router.get("/me", async (req, res) => {
         phone: user.phone ?? null,
       },
     });
-  } catch (e) {
-    return res.status(401).json({ message: "Invalid token" });
+  } catch (err) {
+    next(err);
   }
 });
 
@@ -61,8 +54,8 @@ router.get("/me", async (req, res) => {
  * POST /api/auth/register
  * Body: { username, email, password, role? }
  *
- * ⚠️ Atenție: în cerințe, ideal doar admin creează useri.
- * Aici e "public register". Dacă vrei doar admin, îți modific imediat.
+ * ⚠️ Atenție: conform cerințelor, ideal doar admin creează useri.
+ * Acum e "public register". Dacă vrei doar admin, îți modific imediat.
  */
 router.post("/register", async (req, res, next) => {
   try {
@@ -84,10 +77,11 @@ router.post("/register", async (req, res, next) => {
     // hash password
     const hashed = await bcrypt.hash(String(password), 10);
 
-    // role default: executor (conform temei)
-    const safeRole = role && ["admin", "manager", "executor"].includes(String(role).toLowerCase())
-      ? String(role).toLowerCase()
-      : "executor";
+    // role default: executor
+    const safeRole =
+      role && ["admin", "manager", "executor"].includes(String(role).toLowerCase())
+        ? String(role).toLowerCase()
+        : "executor";
 
     const user = await User.create({
       username: username.trim(),
