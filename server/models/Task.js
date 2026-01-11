@@ -1,26 +1,38 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../sequelize");
 
-const Task = sequelize.define("Task", {
+const User = sequelize.define("User", {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  description: { type: DataTypes.STRING(255), allowNull: false },
-  status: {
-    type: DataTypes.ENUM("OPEN", "PENDING", "COMPLETED", "CLOSED"),
-    defaultValue: "OPEN",
-  },
-  priority: {
-    type: DataTypes.ENUM("LOW", "MEDIUM", "HIGH", "URGENT"),
-    defaultValue: "MEDIUM",
-  },
-  progress: {
-    type: DataTypes.INTEGER,
+  username: { type: DataTypes.STRING(100), allowNull: false },
+  email: { type: DataTypes.STRING(150), allowNull: false, unique: true },
+  role: {
+    type: DataTypes.ENUM("admin", "manager", "executor"),
     allowNull: false,
-    defaultValue: 0,
-    validate: { min: 0, max: 100 },
   },
-  dueDate: { type: DataTypes.DATE, allowNull: true },
-  assignedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-  completedAt: { type: DataTypes.DATE, allowNull: true },
+  password: { type: DataTypes.STRING, allowNull: false },
+  phone: { type: DataTypes.STRING(20) },
+  createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  status: { type: DataTypes.ENUM("active", "inactive"), defaultValue: "active" },
+  lastLogin: { type: DataTypes.DATE, allowNull: true },
+  profilePicture: { type: DataTypes.STRING, allowNull: true },
+  teamId: { type: DataTypes.INTEGER, allowNull: true },
+
+  // ✅ rămâne nullable în DB
+  managerId: { type: DataTypes.INTEGER, allowNull: true },
+}, {
+  validate: {
+    managerRule() {
+      const role = String(this.role || "").toLowerCase();
+
+      if (role === "executor" && !this.managerId) {
+        throw new Error("Executor must have managerId.");
+      }
+
+      if ((role === "admin" || role === "manager") && this.managerId) {
+        throw new Error("Admin/Manager must not have managerId.");
+      }
+    }
+  }
 });
 
-module.exports = Task;
+module.exports = User;

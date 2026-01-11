@@ -5,7 +5,6 @@ import Dashboard from "./pages/Dashboard";
 import Teams from "./pages/Teams";
 import Tasks from "./pages/Tasks";
 import Footer from "./components/Footer";
-import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -44,7 +43,6 @@ function App() {
           <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
           <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
 

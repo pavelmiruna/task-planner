@@ -8,7 +8,6 @@ const sequelize = require("./sequelize");
 const userRouter = require("./routes/userRouter");
 const taskRouter = require("./routes/taskRouter");
 const projectRouter = require("./routes/projectRouter");
-const notificationRouter = require("./routes/notificationRouter");
 const teamRouter = require("./routes/teamRouter");
 const authRouter = require("./routes/authRouter");
 
@@ -35,7 +34,6 @@ app.get("/", (req, res) => {
 app.use("/api/users", userRouter);
 app.use("/api/tasks", taskRouter);
 app.use("/api/projects", projectRouter);
-app.use("/api/notifications", notificationRouter);
 app.use("/api/teams", teamRouter);
 app.use("/api/auth", authRouter);
 

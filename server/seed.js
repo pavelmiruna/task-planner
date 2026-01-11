@@ -9,7 +9,6 @@ const User = require("./models/User");
 const Project = require("./models/Project");
 const Task = require("./models/Task");
 const TeamMember = require("./models/TeamMember");
-const Notification = require("./models/Notification");
 
 // Asocieri (IMPORTANT)
 require("./models/associations");
@@ -49,6 +48,7 @@ async function run() {
       email: "andrei@test.com",
       role: "admin",
       password: passwordHash,
+      managerId: null, // admin nu are manager
     });
 
     const manager = await User.create({
@@ -56,6 +56,7 @@ async function run() {
       email: "mihai@test.com",
       role: "manager",
       password: passwordHash,
+      managerId: null, // manager nu are manager (în tema ta)
     });
 
     const executor1 = await User.create({
@@ -63,7 +64,7 @@ async function run() {
       email: "ana@test.com",
       role: "executor",
       password: passwordHash,
-      managerId: manager.id, // ✅ cerință
+      managerId: manager.id, // ✅ cerință: executor are manager
     });
 
     const executor2 = await User.create({
@@ -71,14 +72,14 @@ async function run() {
       email: "ioana@test.com",
       role: "executor",
       password: passwordHash,
-      managerId: manager.id, // ✅ cerință
+      managerId: manager.id, // ✅ cerință: executor are manager
     });
 
-    // 3) Add members (many-to-many)
+    // 3) Team members (many-to-many)
     // Team Alpha: manager + ana
     await team1.addMembers([manager, executor1]);
 
-    // Team Beta: admin + ioana (doar ca demo)
+    // Team Beta: admin + ioana (demo)
     await team2.addMembers([admin, executor2]);
 
     // 4) Projects
@@ -102,8 +103,9 @@ async function run() {
       startDate: new Date(),
     });
 
-    // 5) Tasks (conforme cu workflow-ul temei)
-    // OPEN -> nealocat (userId null, assignedAt null)
+    // 5) Tasks (workflow corect: OPEN -> PENDING -> COMPLETED -> CLOSED)
+
+    // OPEN -> nealocat
     const t1 = await Task.create({
       description: "Fă pagina Projects mai completă",
       status: "OPEN",
@@ -133,7 +135,7 @@ async function run() {
 
     // COMPLETED -> făcut de executor
     const t3 = await Task.create({
-      description: "Fix notificări endpoints",
+      description: "Curăță și testează endpoint-urile de tasks",
       status: "COMPLETED",
       priority: "URGENT",
       progress: 100,
@@ -147,7 +149,7 @@ async function run() {
 
     // CLOSED -> manager a închis după completed
     const t4 = await Task.create({
-      description: "Pregătește seed demo data pentru prezentare",
+      description: "Pregătește demo data pentru prezentare",
       status: "CLOSED",
       priority: "MEDIUM",
       progress: 100,
@@ -159,34 +161,11 @@ async function run() {
       completedAt: daysFromNow(-1),
     });
 
-    // 6) Notifications (pentru tab-ul Notifications)
-    await Notification.bulkCreate([
-      {
-        userId: executor1.id,     // destinatar: ana
-        fromUserId: manager.id,   // sender: mihai (manager)
-        taskId: t2.id,
-        projectId: p1.id,
-        type: "TASK",
-        message: `Ai primit un task nou în proiectul "${p1.name}".`,
-        isRead: false,
-      },
-      {
-        userId: executor2.id,     // destinatar: ioana
-        fromUserId: admin.id,     // sender: andrei (admin)
-        taskId: t3.id,
-        projectId: p2.id,
-        type: "PROJECT",
-        message: `Proiectul "${p2.name}" a fost actualizat. Verifică statusul.`,
-        isRead: false,
-      },
-    ]);
-
-    // 7) Counts
+    // 6) Counts
     const teamCount = await Team.count();
     const userCount = await User.count();
     const projectCount = await Project.count();
     const taskCount = await Task.count();
-    const notificationCount = await Notification.count();
 
     console.log("✅ Seed done!");
     console.log({
@@ -194,12 +173,12 @@ async function run() {
       userCount,
       projectCount,
       taskCount,
-      notificationCount,
       adminEmail: admin.email,
       managerEmail: manager.email,
       executor1Email: executor1.email,
       executor2Email: executor2.email,
       password: "1234",
+      sampleTasks: [t1.id, t2.id, t3.id, t4.id],
     });
 
     process.exit(0);
