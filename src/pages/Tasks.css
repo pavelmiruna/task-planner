@@ -103,6 +103,34 @@
   padding: 10px 12px; border-radius: 12px; border: 1px solid #e6e6e6; outline: none;
 }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* ✅ icon buttons mai mici (done / edit / delete) */
+.tasks-page .menu {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.tasks-page .icon-btn {
+  padding: 6px 8px;      /* mai mic decât 8px 10px */
+  border-radius: 10px;   /* mai mic decât 12px */
+  font-size: 13px;       /* emoji + icon mai compacte */
+  line-height: 1;
+  min-width: 34px;       /* păstrează uniform */
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tasks-page .icon-btn:hover {
+  background: #fafafa;
+}
+
+.tasks-page .icon-btn.danger:hover {
+  background: #fff5f5;
+  border-color: #ffd6d6;
+}
+
 @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
 
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
