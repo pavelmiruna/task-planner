@@ -32,6 +32,24 @@ const emptyDraft = {
   teamId: "",
 };
 
+function normalizeRole(r) {
+  const v = String(r || "").toLowerCase();
+  if (v === "admin" || v === "manager" || v === "executor") return v;
+  return "";
+}
+
+function normalizeStatus(s) {
+  const v = String(s || "OPEN").toUpperCase();
+  if (["OPEN", "IN_PROGRESS", "COMPLETED", "CLOSED"].includes(v)) return v;
+  return "OPEN";
+}
+
+function normalizePriority(p) {
+  const v = String(p || "MEDIUM").toUpperCase();
+  if (["LOW", "MEDIUM", "HIGH"].includes(v)) return v;
+  return "MEDIUM";
+}
+
 function formatDate(date) {
   if (!date) return "—";
   const d = new Date(date);
@@ -45,7 +63,7 @@ function toDateInputValue(date) {
 }
 
 function statusToPill(status) {
-  const s = String(status || "OPEN").toUpperCase();
+  const s = normalizeStatus(status);
   if (s === "COMPLETED") return "pill done";
   if (s === "CLOSED") return "pill paused";
   if (s === "IN_PROGRESS") return "pill active";
@@ -53,13 +71,19 @@ function statusToPill(status) {
 }
 
 function priorityToClass(priority) {
-  const p = String(priority || "MEDIUM").toUpperCase();
+  const p = normalizePriority(priority);
   if (p === "HIGH") return "prio high";
   if (p === "LOW") return "prio low";
   return "prio medium";
 }
 
-function Projects() {
+export default function Projects() {
+  const token = localStorage.getItem("token");
+  const role = normalizeRole(localStorage.getItem("role"));
+
+  const isExecutor = role === "executor";
+  const isManagerOrAdmin = role === "manager" || role === "admin";
+
   const [projects, setProjects] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -88,6 +112,7 @@ function Projects() {
   }, [teams]);
 
   async function fetchTeams() {
+    if (!token) return;
     setTeamsLoading(true);
     try {
       const res = await api.get("/teams");
@@ -101,6 +126,12 @@ function Projects() {
   }
 
   async function fetchProjects() {
+    if (!token) {
+      setLoading(false);
+      setProjects([]);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -155,6 +186,7 @@ function Projects() {
   }, [projects, query, sortBy]);
 
   function openCreate() {
+    if (!isManagerOrAdmin) return;
     setMode("create");
     setActiveId(null);
     setDraft(emptyDraft);
@@ -163,13 +195,14 @@ function Projects() {
   }
 
   function openEdit(p) {
+    if (!isManagerOrAdmin) return;
     setMode("edit");
     setActiveId(p.id);
     setDraft({
       name: p.name ?? "",
       description: p.description ?? "",
-      status: String(p.status ?? "OPEN").toUpperCase(),
-      priority: String(p.priority ?? "MEDIUM").toUpperCase(),
+      status: normalizeStatus(p.status),
+      priority: normalizePriority(p.priority),
       startDate: toDateInputValue(p.startDate),
       endDate: toDateInputValue(p.endDate),
       teamId: p.teamId ? String(p.teamId) : "",
@@ -198,6 +231,7 @@ function Projects() {
 
   async function handleSave(e) {
     e.preventDefault();
+    if (!isManagerOrAdmin) return;
 
     const msg = validateDraft(draft);
     if (msg) return setError(msg);
@@ -208,8 +242,8 @@ function Projects() {
     const payload = {
       name: draft.name.trim(),
       description: draft.description.trim(),
-      status: draft.status,
-      priority: draft.priority,
+      status: normalizeStatus(draft.status),
+      priority: normalizePriority(draft.priority),
       startDate: draft.startDate || null,
       endDate: draft.endDate || null,
       teamId: draft.teamId ? Number(draft.teamId) : null,
@@ -226,13 +260,15 @@ function Projects() {
       closeModal();
     } catch (err) {
       console.error("Eroare la salvare:", err);
-      setError("Nu am putut salva proiectul. Verifică datele și încearcă din nou.");
+      setError(err?.response?.data?.message || "Nu am putut salva proiectul.");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(p) {
+    if (!isManagerOrAdmin) return;
+
     const ok = window.confirm(`Ștergi proiectul "${p.name}"?`);
     if (!ok) return;
 
@@ -249,17 +285,24 @@ function Projects() {
     <div className="projects-page">
       <div className="projects-header">
         <div>
-          <h2>Proiectele mele</h2>
-          <p className="subtitle">Caută, filtrează, adaugă și editează proiecte.</p>
+          <h2>Projects</h2>
+          <p className="subtitle">
+            {isExecutor
+              ? "Poți vedea proiectele (read-only)."
+              : "Caută, filtrează, adaugă și editează proiecte."}
+          </p>
         </div>
 
         <div className="header-actions">
-          <button className="btn" onClick={fetchProjects} disabled={loading}>
+          <button className="btn" onClick={fetchProjects} disabled={loading || !token}>
             Refresh
           </button>
-          <button className="btn primary" onClick={openCreate}>
-            + New project
-          </button>
+
+          {isManagerOrAdmin && (
+            <button className="btn primary" onClick={openCreate} disabled={!token}>
+              + New project
+            </button>
+          )}
         </div>
       </div>
 
@@ -314,10 +357,12 @@ function Projects() {
       {!loading && !error && filtered.length === 0 && (
         <div className="empty">
           <h3>Niciun proiect găsit</h3>
-          <p>Schimbă filtrul sau creează un proiect nou.</p>
-          <button className="btn primary" onClick={openCreate}>
-            Creează proiect
-          </button>
+          <p>Schimbă filtrul sau revino mai târziu.</p>
+          {isManagerOrAdmin && (
+            <button className="btn primary" onClick={openCreate}>
+              Creează proiect
+            </button>
+          )}
         </div>
       )}
 
@@ -330,19 +375,21 @@ function Projects() {
                   <h3 className="title">{p.name}</h3>
 
                   <div className="badges">
-                    <span className={statusToPill(p.status)}>{String(p.status ?? "OPEN")}</span>
-                    <span className={priorityToClass(p.priority)}>{String(p.priority ?? "MEDIUM")}</span>
+                    <span className={statusToPill(p.status)}>{normalizeStatus(p.status)}</span>
+                    <span className={priorityToClass(p.priority)}>{normalizePriority(p.priority)}</span>
                   </div>
                 </div>
 
-                <div className="menu">
-                  <button className="icon-btn" onClick={() => openEdit(p)} title="Edit">
-                    ✏️
-                  </button>
-                  <button className="icon-btn danger" onClick={() => handleDelete(p)} title="Delete">
-                    🗑️
-                  </button>
-                </div>
+                {isManagerOrAdmin && (
+                  <div className="menu">
+                    <button className="icon-btn" onClick={() => openEdit(p)} title="Edit">
+                      ✏️
+                    </button>
+                    <button className="icon-btn danger" onClick={() => handleDelete(p)} title="Delete">
+                      🗑️
+                    </button>
+                  </div>
+                )}
               </div>
 
               <p className="desc">{p.description || "Fără descriere."}</p>
@@ -367,7 +414,8 @@ function Projects() {
         </div>
       )}
 
-      {isModalOpen && (
+      {/* Modal (doar manager/admin) */}
+      {isModalOpen && isManagerOrAdmin && (
         <div className="modal-backdrop" onMouseDown={closeModal}>
           <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="modal-head">
@@ -475,5 +523,3 @@ function Projects() {
     </div>
   );
 }
-
-export default Projects;

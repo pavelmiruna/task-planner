@@ -14,31 +14,28 @@ export default function Profile() {
   const [success, setSuccess] = useState("");
 
   async function loadProfile() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setUser(null);
+      setDraft(empty);
+      setError("");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
-      const res = await api.get("/users");
-      const list = res?.data?.data ?? [];
+      const res = await api.get("/auth/me");
+      const me = res?.data?.user;
 
-      if (!Array.isArray(list) || list.length === 0) {
+      if (!me) {
         setUser(null);
         setDraft(empty);
-        setError("Nu există niciun utilizator în baza de date (creează unul).");
+        setError("Nu am putut identifica utilizatorul logat.");
         return;
-      }
-
-      // 1) luăm id-ul memorat (dacă există)
-      const savedId = localStorage.getItem("myUserId");
-
-      // 2) încercăm să găsim user-ul salvat
-      let me = savedId ? list.find((u) => String(u.id) === String(savedId)) : null;
-
-      // 3) dacă nu există încă, alegem primul și îl memorăm
-      if (!me) {
-        me = list[0];
-        localStorage.setItem("myUserId", String(me.id));
       }
 
       setUser(me);
@@ -48,6 +45,10 @@ export default function Profile() {
         phone: me.phone ?? "",
         role: me.role ?? "",
       });
+
+      // opțional: sincronizează userId/role în localStorage (ca să nu rămână vechi)
+      localStorage.setItem("userId", String(me.id));
+      localStorage.setItem("role", String(me.role || ""));
     } catch (err) {
       console.error("Profile load error:", err);
       setError("Nu am putut încărca profilul.");
@@ -78,7 +79,7 @@ export default function Profile() {
     }
 
     if (!user?.id) {
-      setError("Nu am un user selectat.");
+      setError("Nu am un user logat.");
       return;
     }
 
@@ -91,11 +92,14 @@ export default function Profile() {
         username: draft.username.trim(),
         email: draft.email.trim(),
         phone: draft.phone.trim() || null,
-        role: draft.role || user.role,
       });
 
       const updated = res?.data?.data ?? user;
       setUser(updated);
+
+      // păstrăm role (nu îl edităm din profil)
+      setDraft((d) => ({ ...d, role: updated.role ?? d.role }));
+
       setSuccess("Profil salvat ✔");
     } catch (err) {
       console.error("Profile save error:", err);

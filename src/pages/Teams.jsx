@@ -5,6 +5,9 @@ import "./Teams.css";
 const emptyDraft = { name: "", description: "", memberIds: [] };
 
 export default function Teams() {
+  const role = (localStorage.getItem("role") || "").toLowerCase();
+  const canManageTeams = role === "admin" || role === "manager";
+
   const [teams, setTeams] = useState([]);
   const [users, setUsers] = useState([]);
 
@@ -21,8 +24,16 @@ export default function Teams() {
   const [saving, setSaving] = useState(false);
 
   async function fetchTeams() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setTeams([]);
+      return;
+    }
+
     setLoading(true);
     setError("");
+
     try {
       const res = await api.get("/teams");
       const items = res?.data?.data ?? [];
@@ -36,6 +47,11 @@ export default function Teams() {
   }
 
   async function fetchUsers() {
+    if (!canManageTeams) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     setUsersLoading(true);
     try {
       const res = await api.get("/users");
@@ -72,6 +88,7 @@ export default function Teams() {
   }, [users]);
 
   function openCreate() {
+    if (!canManageTeams) return;
     setMode("create");
     setActiveId(null);
     setDraft(emptyDraft);
@@ -80,6 +97,8 @@ export default function Teams() {
   }
 
   function openEdit(team) {
+    if (!canManageTeams) return;
+
     setMode("edit");
     setActiveId(team.id);
 
@@ -125,14 +144,18 @@ export default function Teams() {
   }
 
   async function saveMembers(teamId, memberIds) {
-    // memberIds trebuie să fie array de numere
-    const userIds = (memberIds ?? []).map((x) => Number(x)).filter((n) => Number.isFinite(n));
+    if (!canManageTeams) return;
+
+    const userIds = (memberIds ?? [])
+      .map((x) => Number(x))
+      .filter((n) => Number.isFinite(n));
 
     await api.put(`/teams/${teamId}/members`, { userIds });
   }
 
   async function handleSave(e) {
     e.preventDefault();
+    if (!canManageTeams) return;
 
     const msg = validate(draft);
     if (msg) return setError(msg);
@@ -151,11 +174,10 @@ export default function Teams() {
         const created = res?.data?.data;
         const newId = created?.id;
 
-        // 2) setăm members (dacă avem id)
+        // 2) setăm members
         if (newId) {
           await saveMembers(newId, draft.memberIds);
         }
-
       } else {
         // 1) update team
         await api.put(`/teams/${activeId}`, {
@@ -178,6 +200,8 @@ export default function Teams() {
   }
 
   async function handleDelete(team) {
+    if (!canManageTeams) return;
+
     const ok = window.confirm(`Ștergi echipa "${team.name}"?`);
     if (!ok) return;
 
@@ -195,28 +219,35 @@ export default function Teams() {
       <div className="teams-head">
         <div>
           <h2>Teams</h2>
-          <p className="sub">Gestionează echipele: adaugă, editează, șterge.</p>
+          <p className="sub">
+            {canManageTeams
+              ? "Gestionează echipele: adaugă, editează, șterge."
+              : "Vizualizează echipele."}
+          </p>
         </div>
 
         <div className="actions">
           <button className="btn" onClick={fetchTeams} disabled={loading}>
             Refresh
           </button>
-          <button className="btn primary" onClick={openCreate}>
-            + New team
-          </button>
+
+          {canManageTeams && (
+            <button className="btn primary" onClick={openCreate}>
+              + New team
+            </button>
+          )}
         </div>
       </div>
 
       <div className="toolbar">
-  <div className="search">
-    <input 
-      value={query} 
-      onChange={(e) => setQuery(e.target.value)} 
-      placeholder="Caută echipă..." 
-    />
-  </div>
-</div>
+        <div className="search">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Caută echipă..."
+          />
+        </div>
+      </div>
 
       {loading && (
         <div className="state">
@@ -230,10 +261,13 @@ export default function Teams() {
       {!loading && !error && filtered.length === 0 && (
         <div className="empty">
           <h3>Nicio echipă</h3>
-          <p>Creează prima echipă.</p>
-          <button className="btn primary" onClick={openCreate}>
-            Creează echipă
-          </button>
+          <p>{canManageTeams ? "Creează prima echipă." : "Nu există echipe."}</p>
+
+          {canManageTeams && (
+            <button className="btn primary" onClick={openCreate}>
+              Creează echipă
+            </button>
+          )}
         </div>
       )}
 
@@ -243,14 +277,17 @@ export default function Teams() {
             <div key={t.id} className="team-card">
               <div className="top">
                 <h3>{t.name}</h3>
-                <div className="menu">
-                  <button className="icon-btn" onClick={() => openEdit(t)} title="Edit">
-                    ✏️
-                  </button>
-                  <button className="icon-btn danger" onClick={() => handleDelete(t)} title="Delete">
-                    🗑️
-                  </button>
-                </div>
+
+                {canManageTeams && (
+                  <div className="menu">
+                    <button className="icon-btn" onClick={() => openEdit(t)} title="Edit">
+                      ✏️
+                    </button>
+                    <button className="icon-btn danger" onClick={() => handleDelete(t)} title="Delete">
+                      🗑️
+                    </button>
+                  </div>
+                )}
               </div>
 
               <p className="desc">{t.description || "Fără descriere."}</p>
@@ -264,7 +301,9 @@ export default function Teams() {
                       {m.username ?? m.email ?? `User #${m.id}`}
                     </span>
                   ))}
-                  {t.members?.length > 5 && <span className="member-more">+{t.members.length - 5}</span>}
+                  {t.members?.length > 5 && (
+                    <span className="member-more">+{t.members.length - 5}</span>
+                  )}
                   {!t.members?.length && <span className="member-empty">—</span>}
                 </div>
               </div>
@@ -275,7 +314,8 @@ export default function Teams() {
         </div>
       )}
 
-      {isModalOpen && (
+      {/* Modal doar pentru admin/manager */}
+      {isModalOpen && canManageTeams && (
         <div className="modal-backdrop" onMouseDown={closeModal}>
           <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="modal-head">
@@ -299,16 +339,20 @@ export default function Teams() {
                 <textarea
                   rows={4}
                   value={draft.description}
-                  onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, description: e.target.value }))
+                  }
                 />
               </label>
 
-              {/* ✅ Members selector */}
+              {/* Members selector */}
               <div className="members-box">
                 <div className="members-box-head">
                   <div>
                     <div className="members-title">Membrii echipei</div>
-                    <div className="members-hint">Bifează userii pe care vrei să îi adaugi.</div>
+                    <div className="members-hint">
+                      Bifează userii pe care vrei să îi adaugi.
+                    </div>
                   </div>
 
                   <button type="button" className="btn" onClick={clearMembers} disabled={saving}>
@@ -373,6 +417,12 @@ export default function Teams() {
                   {saving ? "Saving..." : "Save"}
                 </button>
               </div>
+
+              {!canManageTeams && (
+                <div className="error" style={{ marginTop: 10 }}>
+                  Nu ai drepturi să editezi echipe.
+                </div>
+              )}
             </form>
           </div>
         </div>

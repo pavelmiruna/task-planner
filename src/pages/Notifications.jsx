@@ -9,14 +9,24 @@ export default function Notifications() {
   const [onlyUnread, setOnlyUnread] = useState(false);
 
   async function fetchNotifications() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setItems([]);
+      setError("");
+      return;
+    }
+
     setLoading(true);
     setError("");
+
     try {
       const params = {};
       if (onlyUnread) params.unread = "true";
 
-      const res = await api.get("/notifications", { params }); // dacă baseURL include /api
-      setItems(res?.data?.data ?? []);
+      const res = await api.get("/notifications", { params });
+      const list = res?.data?.data ?? [];
+      setItems(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Eroare notifications:", err);
       setError("Nu am putut încărca notificările.");
@@ -33,7 +43,7 @@ export default function Notifications() {
   async function markRead(id) {
     try {
       await api.put(`/notifications/${id}/read`);
-      fetchNotifications();
+      await fetchNotifications();
     } catch (err) {
       console.error("Eroare mark read:", err);
       alert("Nu am putut marca notificarea ca citită.");
@@ -43,7 +53,7 @@ export default function Notifications() {
   async function markAllRead() {
     try {
       await api.put("/notifications/read-all");
-      fetchNotifications();
+      await fetchNotifications();
     } catch (err) {
       console.error("Eroare mark all read:", err);
       alert("Nu am putut marca toate ca citite.");
@@ -56,7 +66,7 @@ export default function Notifications() {
 
     try {
       await api.delete(`/notifications/${id}`);
-      fetchNotifications();
+      await fetchNotifications();
     } catch (err) {
       console.error("Eroare delete:", err);
       alert("Nu am putut șterge notificarea.");
@@ -64,8 +74,19 @@ export default function Notifications() {
   }
 
   function typeBadge(type) {
-    const t = String(type || "info").toLowerCase();
+    const t = String(type || "info").toLowerCase(); // TASK -> "task"
     return `nbadge ${t}`;
+  }
+
+  function titleFor(n) {
+    // dacă backend-ul nu are "title", construim unul ok
+    // ex: "TASK" / "PROJECT" + mesaj
+    const t = String(n.type || "").toUpperCase();
+    if (n.title) return n.title;
+
+    if (t === "TASK") return "Task update";
+    if (t === "PROJECT") return "Project update";
+    return "Notification";
   }
 
   return (
@@ -80,10 +101,16 @@ export default function Notifications() {
           <button className="btn" onClick={fetchNotifications} disabled={loading}>
             Refresh
           </button>
-          <button className="btn" onClick={markAllRead} disabled={loading}>
+
+          <button className="btn" onClick={markAllRead} disabled={loading || items.length === 0}>
             Mark all read
           </button>
-          <button className="btn primary" onClick={() => setOnlyUnread((v) => !v)}>
+
+          <button
+            className="btn primary"
+            onClick={() => setOnlyUnread((v) => !v)}
+            disabled={loading}
+          >
             {onlyUnread ? "Show all" : "Only unread"}
           </button>
         </div>
@@ -112,11 +139,19 @@ export default function Notifications() {
               <div className="top">
                 <div className="left">
                   <div className="title-row">
-                    <h3 className="title">{n.title}</h3>
+                    <h3 className="title">{titleFor(n)}</h3>
                     <span className={typeBadge(n.type)}>{String(n.type || "info")}</span>
                     {!n.isRead && <span className="dot" title="Unread" />}
                   </div>
+
                   <p className="msg">{n.message || "—"}</p>
+
+                  {/* bonus: info contextuală dacă există */}
+                  <div className="mini-meta">
+                    {n.projectId ? <span className="chip">Project #{n.projectId}</span> : null}
+                    {n.taskId ? <span className="chip">Task #{n.taskId}</span> : null}
+                    {n.fromUserId ? <span className="chip">From #{n.fromUserId}</span> : null}
+                  </div>
                 </div>
 
                 <div className="menu">

@@ -2,12 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/api";
 import "./Tasks.css";
 
-const STATUS_UI = [
+const STATUS_UI_ALL = [
   { value: "all", label: "Status" },
   { value: "OPEN", label: "Open" },
   { value: "PENDING", label: "Pending" },
   { value: "COMPLETED", label: "Completed" },
   { value: "CLOSED", label: "Closed" },
+];
+
+const STATUS_UI_EXECUTOR = [
+  { value: "all", label: "Status" },
+  { value: "OPEN", label: "Open" },
+  { value: "PENDING", label: "Pending" },
+  { value: "COMPLETED", label: "Completed" },
 ];
 
 const PRIORITY_UI = [
@@ -51,11 +58,44 @@ function prioPill(priority) {
   return `pill prio ${p.toLowerCase()}`;
 }
 
+function normalizeRole(r) {
+  const v = String(r || "").toLowerCase();
+  if (v === "admin" || v === "manager" || v === "executor") return v;
+  return "";
+}
+
+function normalizeTaskStatus(s) {
+  const v = String(s || "OPEN").toUpperCase();
+  if (["OPEN", "PENDING", "COMPLETED", "CLOSED"].includes(v)) return v;
+  return "OPEN";
+}
+
+function normalizePriority(p) {
+  const v = String(p || "MEDIUM").toUpperCase();
+  if (["LOW", "MEDIUM", "HIGH", "URGENT"].includes(v)) return v;
+  return "MEDIUM";
+}
+
+// încearcă mai multe nume posibile (în funcție de backend)
+function getAssignedId(t) {
+  return (
+    t?.userId ??
+    t?.executorId ??
+    t?.assignedTo ??
+    t?.assignedUserId ??
+    t?.assigneeId ??
+    null
+  );
+}
+
 export default function Tasks() {
-  // role
-  const role = (localStorage.getItem("role") || "").toLowerCase();
+  const token = localStorage.getItem("token");
+  const role = normalizeRole(localStorage.getItem("role"));
+
   const isExecutor = role === "executor";
   const isManagerOrAdmin = role === "manager" || role === "admin";
+
+  const STATUS_UI = isExecutor ? STATUS_UI_EXECUTOR : STATUS_UI_ALL;
 
   const [tasks, setTasks] = useState([]);
 
@@ -96,6 +136,7 @@ export default function Tasks() {
   }, [executors]);
 
   async function fetchTeams() {
+    if (!token) return;
     setTeamsLoading(true);
     try {
       const res = await api.get("/teams");
@@ -109,7 +150,7 @@ export default function Tasks() {
   }
 
   async function fetchExecutors() {
-    // doar manager/admin are nevoie de asta (pentru assign)
+    if (!token) return;
     if (!isManagerOrAdmin) return;
 
     setUsersLoading(true);
@@ -117,10 +158,7 @@ export default function Tasks() {
       const res = await api.get("/users");
       const items = res?.data?.data ?? [];
       const list = Array.isArray(items) ? items : [];
-
-      const execs = list.filter(
-        (u) => String(u.role || "").toLowerCase() === "executor"
-      );
+      const execs = list.filter((u) => normalizeRole(u.role) === "executor");
       setExecutors(execs);
     } catch (err) {
       console.error("Eroare la preluare users/executors:", err);
@@ -131,6 +169,12 @@ export default function Tasks() {
   }
 
   async function fetchTasks() {
+    if (!token) {
+      setLoading(false);
+      setTasks([]);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -163,11 +207,10 @@ export default function Tasks() {
 
     return tasks.filter((t) => {
       const desc = (t.description ?? "").toLowerCase();
-
       const okQuery = !q || desc.includes(q);
 
-      const st = String(t.status ?? "OPEN").toUpperCase();
-      const pr = String(t.priority ?? "MEDIUM").toUpperCase();
+      const st = normalizeTaskStatus(t.status);
+      const pr = normalizePriority(t.priority);
 
       const okStatus = statusFilter === "all" || st === statusFilter;
       const okPrio = priorityFilter === "all" || pr === priorityFilter;
@@ -191,8 +234,7 @@ export default function Tasks() {
 
   function validateCreate(d) {
     if (!d.description.trim()) return "Completează descrierea task-ului.";
-    if (d.description.trim().length < 3)
-      return "Descrierea trebuie să aibă minim 3 caractere.";
+    if (d.description.trim().length < 3) return "Descrierea trebuie să aibă minim 3 caractere.";
     if (!d.priority) return "Alege o prioritate.";
     return "";
   }
@@ -207,10 +249,9 @@ export default function Tasks() {
     setSaving(true);
     setError("");
 
-    // backend-ul impune OPEN și ignoră userId/status la create
     const payload = {
       description: draft.description.trim(),
-      priority: draft.priority,
+      priority: normalizePriority(draft.priority),
       dueDate: draft.dueDate || null,
       projectId: draft.projectId ? Number(draft.projectId) : null,
       teamId: draft.teamId ? Number(draft.teamId) : null,
@@ -222,7 +263,7 @@ export default function Tasks() {
       closeModal();
     } catch (err) {
       console.error("Eroare la creare task:", err);
-      setError("Nu am putut crea task-ul.");
+      setError(err?.response?.data?.message || "Nu am putut crea task-ul.");
     } finally {
       setSaving(false);
     }
@@ -231,7 +272,7 @@ export default function Tasks() {
   async function handleDelete(t) {
     if (!isManagerOrAdmin) return;
 
-    const ok = window.confirm(`Ștergi task-ul?`);
+    const ok = window.confirm("Ștergi task-ul?");
     if (!ok) return;
 
     try {
@@ -279,11 +320,13 @@ export default function Tasks() {
     }
 
     try {
+      // presupunere: backend așteaptă { userId }
+      // dacă backend așteaptă alt nume, schimbă aici.
       await api.put(`/tasks/${t.id}/assign`, { userId: executorId });
       await fetchTasks();
     } catch (err) {
       console.error("Eroare assign:", err);
-      alert("Nu am putut aloca task-ul.");
+      alert(err?.response?.data?.message || "Nu am putut aloca task-ul.");
     }
   }
 
@@ -300,12 +343,12 @@ export default function Tasks() {
         </div>
 
         <div className="actions">
-          <button className="btn" onClick={fetchTasks} disabled={loading}>
+          <button className="btn" onClick={fetchTasks} disabled={loading || !token}>
             Refresh
           </button>
 
           {isManagerOrAdmin && (
-            <button className="btn primary" onClick={openCreate}>
+            <button className="btn primary" onClick={openCreate} disabled={!token}>
               + New task
             </button>
           )}
@@ -322,10 +365,7 @@ export default function Tasks() {
         </div>
 
         <div className="filters">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             {STATUS_UI.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -333,10 +373,7 @@ export default function Tasks() {
             ))}
           </select>
 
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-          >
+          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
             {PRIORITY_UI.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -382,10 +419,13 @@ export default function Tasks() {
       {!loading && filtered.length > 0 && (
         <div className="grid">
           {filtered.map((t) => {
-            const st = String(t.status ?? "OPEN").toUpperCase();
+            const st = normalizeTaskStatus(t.status);
+
+            const canAssign = isManagerOrAdmin && st === "OPEN";
             const canComplete = isExecutor && st === "PENDING";
             const canClose = isManagerOrAdmin && st === "COMPLETED";
-            const canAssign = isManagerOrAdmin && st === "OPEN";
+
+            const assignedId = getAssignedId(t);
 
             return (
               <div key={t.id} className="task-card">
@@ -394,42 +434,26 @@ export default function Tasks() {
                     <h3 className="title">{t.description}</h3>
 
                     <div className="pills">
-                      <span className={statusPill(t.status)}>
-                        {String(t.status ?? "OPEN")}
-                      </span>
-                      <span className={prioPill(t.priority)}>
-                        {String(t.priority ?? "MEDIUM")}
-                      </span>
+                      <span className={statusPill(st)}>{st}</span>
+                      <span className={prioPill(t.priority)}>{normalizePriority(t.priority)}</span>
                     </div>
                   </div>
 
                   <div className="menu">
                     {canComplete && (
-                      <button
-                        className="icon-btn"
-                        onClick={() => handleComplete(t)}
-                        title="Complete"
-                      >
+                      <button className="icon-btn" onClick={() => handleComplete(t)} title="Complete">
                         ✅
                       </button>
                     )}
 
                     {canClose && (
-                      <button
-                        className="icon-btn"
-                        onClick={() => handleClose(t)}
-                        title="Close"
-                      >
+                      <button className="icon-btn" onClick={() => handleClose(t)} title="Close">
                         🔒
                       </button>
                     )}
 
                     {isManagerOrAdmin && (
-                      <button
-                        className="icon-btn danger"
-                        onClick={() => handleDelete(t)}
-                        title="Delete"
-                      >
+                      <button className="icon-btn danger" onClick={() => handleDelete(t)} title="Delete">
                         🗑️
                       </button>
                     )}
@@ -438,14 +462,12 @@ export default function Tasks() {
 
                 {/* Assign UI (manager/admin, doar când OPEN) */}
                 {canAssign && (
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center" }}>
+                  <div className="assign-row">
                     <select
                       value={assignToByTask[t.id] ?? ""}
-                      onChange={(e) =>
-                        setAssignToByTask((m) => ({ ...m, [t.id]: e.target.value }))
-                      }
+                      onChange={(e) => setAssignToByTask((m) => ({ ...m, [t.id]: e.target.value }))}
                       disabled={usersLoading}
-                      style={{ flex: 1 }}
+                      className="assign-select"
                     >
                       <option value="">— Alege executant —</option>
                       {executors.map((u) => (
@@ -466,19 +488,18 @@ export default function Tasks() {
 
                   <span className="meta">
                     Team:{" "}
-                    {t.teamId
-                      ? teamById.get(String(t.teamId))?.name ?? `#${t.teamId}`
-                      : "—"}
+                    {t.teamId ? teamById.get(String(t.teamId))?.name ?? `#${t.teamId}` : "—"}
                   </span>
 
                   <span className="meta">Due: {formatDate(t.dueDate)}</span>
 
-                  {/* Info extra: cine e assignat */}
                   {!isExecutor && (
                     <span className="meta">
                       Assigned:{" "}
-                      {t.userId
-                        ? executorById.get(String(t.userId))?.username ?? `#${t.userId}`
+                      {assignedId
+                        ? executorById.get(String(assignedId))?.username ??
+                          executorById.get(String(assignedId))?.email ??
+                          `#${assignedId}`
                         : "—"}
                     </span>
                   )}
@@ -505,9 +526,7 @@ export default function Tasks() {
                 Task (descriere)
                 <input
                   value={draft.description}
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, description: e.target.value }))
-                  }
+                  onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
                   placeholder="Ex: Creează pagina Teams"
                 />
               </label>
@@ -517,9 +536,7 @@ export default function Tasks() {
                   Priority
                   <select
                     value={draft.priority}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, priority: e.target.value }))
-                    }
+                    onChange={(e) => setDraft((d) => ({ ...d, priority: e.target.value }))}
                   >
                     <option value="LOW">LOW</option>
                     <option value="MEDIUM">MEDIUM</option>
@@ -533,9 +550,7 @@ export default function Tasks() {
                   <input
                     type="date"
                     value={draft.dueDate}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, dueDate: e.target.value }))
-                    }
+                    onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))}
                   />
                 </label>
               </div>
@@ -545,9 +560,7 @@ export default function Tasks() {
                   Project ID (opțional)
                   <input
                     value={draft.projectId}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, projectId: e.target.value }))
-                    }
+                    onChange={(e) => setDraft((d) => ({ ...d, projectId: e.target.value }))}
                     placeholder="Ex: 1"
                   />
                 </label>
@@ -556,9 +569,7 @@ export default function Tasks() {
                   Team (opțional)
                   <select
                     value={draft.teamId}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, teamId: e.target.value }))
-                    }
+                    onChange={(e) => setDraft((d) => ({ ...d, teamId: e.target.value }))}
                     disabled={teamsLoading}
                   >
                     <option value="">— Fără echipă —</option>
@@ -574,19 +585,10 @@ export default function Tasks() {
               {error && <div className="error">{error}</div>}
 
               <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={closeModal}
-                  disabled={saving}
-                >
+                <button type="button" className="btn" onClick={closeModal} disabled={saving}>
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="btn primary"
-                  disabled={saving}
-                >
+                <button type="submit" className="btn primary" disabled={saving}>
                   {saving ? "Saving..." : "Create"}
                 </button>
               </div>

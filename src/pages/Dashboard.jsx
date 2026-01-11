@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/api";
 import "./Dashboard.css";
 
@@ -11,8 +12,7 @@ function normalizeStatus(s) {
 
 function computeStats(projects) {
   const total = projects.length;
-   
-  
+
   const byStatus = projects.reduce(
     (acc, p) => {
       const s = normalizeStatus(p.status);
@@ -21,9 +21,10 @@ function computeStats(projects) {
     },
     { OPEN: 0, IN_PROGRESS: 0, COMPLETED: 0, CLOSED: 0 }
   );
+
   const progressBase = total - byStatus.CLOSED;
-  // progres = procent proiecte COMPLETED din total
-  const completedPct = progressBase <= 0 ? 0 : Math.round((byStatus.COMPLETED / progressBase) * 100);
+  const completedPct =
+    progressBase <= 0 ? 0 : Math.round((byStatus.COMPLETED / progressBase) * 100);
 
   return { total, byStatus, completedPct };
 }
@@ -33,13 +34,13 @@ function pillClassFromStatus(status) {
   if (s === "COMPLETED") return "pill done";
   if (s === "IN_PROGRESS") return "pill active";
   if (s === "CLOSED") return "pill paused";
-  return "pill active"; // OPEN
+  return "pill active";
 }
 
 function labelStatus(status) {
   const s = normalizeStatus(status);
   if (s === "IN_PROGRESS") return "in progress";
-  return s.toLowerCase(); // open / completed / closed
+  return s.toLowerCase();
 }
 
 export default function Dashboard() {
@@ -48,6 +49,16 @@ export default function Dashboard() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    // ✅ dacă nu ești logată, nu cere /projects (altfel 401)
+    if (!token) {
+      setLoading(false);
+      setProjects([]);
+      setError("");
+      return;
+    }
+
     let mounted = true;
     setLoading(true);
     setError("");
@@ -90,9 +101,14 @@ export default function Dashboard() {
           <h2>Dashboard</h2>
           <p className="sub">Overview rapid al proiectelor tale.</p>
         </div>
+
         <div className="actions">
-          <a className="btn" href="/projects">Vezi Projects</a>
-          <a className="btn primary" href="/projects">+ New project</a>
+          <Link className="btn" to="/projects">
+            Vezi Projects
+          </Link>
+          <Link className="btn primary" to="/projects">
+            + New project
+          </Link>
         </div>
       </div>
 
@@ -153,13 +169,15 @@ export default function Dashboard() {
             <section className="panel">
               <div className="panel-head">
                 <h3>Proiecte recente</h3>
-                <a className="link" href="/projects">vezi toate</a>
+                <Link className="link" to="/projects">vezi toate</Link>
               </div>
 
               {recent.length === 0 ? (
                 <div className="empty">
                   <p>N-ai proiecte încă.</p>
-                  <a className="btn primary" href="/projects">Creează primul proiect</a>
+                  <Link className="btn primary" to="/projects">
+                    Creează primul proiect
+                  </Link>
                 </div>
               ) : (
                 <div className="recent">
