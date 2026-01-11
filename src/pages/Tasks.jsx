@@ -94,23 +94,20 @@ export default function Tasks() {
   }
 
   async function fetchTasks() {
-    setLoading(true);
-    setError("");
-    try {
-      const params = {};
-      if (statusFilter !== "all") params.status = statusFilter; // OPEN, PENDING...
-      if (priorityFilter !== "all") params.priority = priorityFilter; // LOW, MEDIUM...
-
-      const res = await api.get("/tasks", { params });
-      const items = res?.data?.data ?? [];
-      setTasks(Array.isArray(items) ? items : []);
-    } catch (err) {
-      console.error("Eroare la preluare tasks:", err);
-      setError("Nu am putut încărca task-urile.");
-    } finally {
-      setLoading(false);
-    }
+  setLoading(true);
+  setError("");
+  try {
+    const res = await api.get("/tasks");
+    const items = res?.data?.data ?? [];
+    setTasks(Array.isArray(items) ? items : []);
+  } catch (err) {
+    console.error("Eroare la preluare tasks:", err);
+    setError("Nu am putut încărca task-urile.");
+  } finally {
+    setLoading(false);
   }
+}
+
 
   useEffect(() => {
     fetchTeams();
@@ -118,19 +115,27 @@ export default function Tasks() {
   }, []);
 
   useEffect(() => {
-    fetchTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, priorityFilter]);
+  fetchTasks();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return tasks;
+  const q = query.trim().toLowerCase();
 
-    return tasks.filter((t) => {
-      const desc = (t.description ?? "").toLowerCase();
-      return desc.includes(q);
-    });
-  }, [tasks, query]);
+  return tasks.filter((t) => {
+    const desc = (t.description ?? "").toLowerCase();
+
+    const okQuery = !q || desc.includes(q);
+
+    const st = String(t.status ?? "OPEN").toUpperCase();
+    const pr = String(t.priority ?? "MEDIUM").toUpperCase();
+
+    const okStatus = statusFilter === "all" || st === statusFilter;
+    const okPrio = priorityFilter === "all" || pr === priorityFilter;
+
+    return okQuery && okStatus && okPrio;
+  });
+}, [tasks, query, statusFilter, priorityFilter]);
 
   function openCreate() {
     setMode("create");
