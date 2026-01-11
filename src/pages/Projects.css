@@ -46,12 +46,21 @@
   padding: 12px;
   border: 1px solid #eee;
   border-radius: 16px;
-  background: linear-gradient(135deg, #9b7cff, #6affc3)!important;
+  background: linear-gradient(135deg, #9b7cff, #6affc3) !important;
   margin-bottom: 16px;
 }
 
+/* ✅ IMPORTANT: search-ul nu mai folosește vw (care depășește containerul) */
+.search {
+  flex: 1 1 320px;   /* are voie să se micșoreze și să treacă pe rând nou */
+  min-width: 0;      /* permite micșorare reală în flex */
+  width: 100%;
+}
+
 .search input {
-  width: min(520px, 75vw);
+  width: 100%;
+  max-width: 520px;        /* pe desktop nu devine gigant */
+  box-sizing: border-box;  /* padding-ul intră în width */
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid #e6e6e6;
@@ -104,11 +113,41 @@ select {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
 @media (max-width: 560px) {
   .project-grid {
     grid-template-columns: 1fr;
   }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .search {
+    width: 100%;
+  }
+
   .search input {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .filters {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .filters select {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  /* dacă butonul Reset e în .filters, îl face full width */
+  .filters .btn {
     width: 100%;
   }
 }
@@ -118,7 +157,7 @@ select {
   border-radius: 18px;
   padding: 14px;
   background: #fff;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
 }
 
 .card-top {
@@ -202,7 +241,8 @@ select {
   border-color: #ffd6d6;
 }
 
-.state, .empty {
+.state,
+.empty {
   border: 1px dashed #e6e6e6;
   border-radius: 18px;
   padding: 22px;
@@ -231,13 +271,15 @@ select {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -249,7 +291,7 @@ select {
   background: #fff;
   border-radius: 18px;
   border: 1px solid #eee;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
 }
 
 .modal-head {
@@ -292,6 +334,7 @@ select {
   gap: 10px;
   margin-top: 6px;
 }
+
 .badges {
   display: flex;
   gap: 8px;
@@ -311,9 +354,18 @@ select {
   font-weight: 700;
 }
 
-.prio.low { background: #eff6ff; border-color: #dbeafe; }
-.prio.medium { background: #f5f5f5; border-color: #eee; }
-.prio.high { background: #fff5f5; border-color: #ffd6d6; }
+.prio.low {
+  background: #eff6ff;
+  border-color: #dbeafe;
+}
+.prio.medium {
+  background: #f5f5f5;
+  border-color: #eee;
+}
+.prio.high {
+  background: #fff5f5;
+  border-color: #ffd6d6;
+}
 
 .dates {
   display: flex;
@@ -330,39 +382,7 @@ select {
 }
 
 @media (max-width: 560px) {
-  .row { grid-template-columns: 1fr; }
-}
-@media (max-width: 560px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 10px;
-  }
-
-  .search {
-    width: 100%;
-  }
-
-  .search input {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .filters {
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .filters select {
-    flex: 1 1 140px; /* se aranjează frumos pe 1-2 coloane */
-    min-width: 0;
-  }
-
-  .filters .btn {
-    width: 100%;
+  .row {
+    grid-template-columns: 1fr;
   }
 }
-
-

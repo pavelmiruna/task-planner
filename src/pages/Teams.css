@@ -17,14 +17,36 @@
 
 .actions { display: flex; gap: 10px; }
 
+/* ✅ dacă toolbar-ul tău e container colorat, păstrează-l așa;
+   dacă deja există .toolbar în JSX, asta îl face responsive */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  background: #fff;
+  margin-bottom: 14px;
+}
+
+/* ✅ fără vw; input respectă containerul */
 .toolbar input {
-  width: min(520px, 90vw);
+  flex: 1 1 320px;
+  min-width: 0;
+  width: 100%;
+  max-width: 520px;
+  box-sizing: border-box;
+
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid #e6e6e6;
   outline: none;
-  margin-bottom: 14px;
 }
+
+/* dacă ai doar un input și vrei spațiu sub el pe desktop */
+.toolbar input { margin-bottom: 0; }
 
 .btn {
   border: 1px solid #e6e6e6;
@@ -33,7 +55,6 @@
   border-radius: 12px;
   cursor: pointer;
 }
-
 .btn:hover { background: #fafafa; }
 
 .btn.primary {
@@ -50,7 +71,25 @@
 }
 
 @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+  .grid { grid-template-columns: 1fr; }
+
+  /* ✅ toolbar devine coloană, input full-width */
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .toolbar input {
+    max-width: 100%;
+  }
+
+  .toolbar .btn {
+    width: 100%;
+  }
+}
 
 .team-card {
   border: 1px solid #eee;
@@ -156,23 +195,7 @@
   justify-content: flex-end;
   gap: 10px;
 }
-.members { margin-top: 10px; }
-.members-label { font-size: 12px; color: #777; margin-bottom: 6px; }
-.members-list { display: flex; gap: 8px; flex-wrap: wrap; }
 
-.member-pill {
-  display: inline-flex;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid #eee;
-  background: #fafafa;
-  font-size: 12px;
-  color: #333;
-}
-
-.member-more { font-size: 12px; color: #666; }
-.member-empty { font-size: 12px; color: #999; }
-/* members preview on card */
 .members { margin-top: 10px; }
 .members-label { font-size: 12px; color: #777; margin-bottom: 6px; }
 .members-list { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -245,4 +268,3 @@
 .member-email { font-size: 12px; color: #666; }
 
 .selected { margin-top: 10px; }
-

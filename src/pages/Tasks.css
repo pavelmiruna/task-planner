@@ -1,8 +1,11 @@
 .tasks-page { padding: 24px; max-width: 1100px; margin: 0 auto; }
 
 .tasks-head {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  gap: 16px; margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
 }
 .tasks-head h2 { margin: 0; font-size: 28px; }
 .sub { margin: 6px 0 0; color: #666; }
@@ -10,52 +13,106 @@
 .actions { display: flex; gap: 10px; }
 
 .toolbar {
-  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
-  padding: 12px; border: 1px solid #eee; border-radius: 16px; background: #fff;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  background: #fff;
   margin-bottom: 14px;
 }
+
+/* ✅ fără vw; input-ul respectă containerul */
 .toolbar input {
-  width: min(420px, 90vw);
-  padding: 10px 12px; border-radius: 12px; border: 1px solid #e6e6e6; outline: none;
+  flex: 1 1 320px;
+  min-width: 0;
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  outline: none;
 }
+
 .toolbar select {
-  padding: 10px 12px; border-radius: 12px; border: 1px solid #e6e6e6; background: #fff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  background: #fff;
 }
 
 .btn {
-  border: 1px solid #e6e6e6; background: #fff; padding: 10px 12px;
-  border-radius: 12px; cursor: pointer;
+  border: 1px solid #e6e6e6;
+  background: #fff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
 }
 .btn:hover { background: #fafafa; }
 .btn.primary { background: #111; color: #fff; border-color: #111; }
 .btn.primary:hover { background: #000; }
 
 .grid {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+  .grid { grid-template-columns: 1fr; }
+
+  /* ✅ toolbar devine coloană, input full-width */
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .toolbar input {
+    max-width: 100%;
+  }
+
+  .toolbar select,
+  .toolbar .btn {
+    width: 100%;
+  }
+}
 
 .task-card {
-  border: 1px solid #eee; border-radius: 18px; padding: 14px; background: #fff;
+  border: 1px solid #eee;
+  border-radius: 18px;
+  padding: 14px;
+  background: #fff;
 }
 
 .top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* sau center dacă vrei perfect pe mijloc */
+  align-items: flex-start;
   gap: 10px;
 }
+
 .title { margin: 0; font-size: 18px; }
 .pills { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 
 .pill {
-  display: inline-flex; padding: 6px 10px; border-radius: 999px;
-  font-size: 12px; border: 1px solid #eee; background: #fafafa;
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid #eee;
+  background: #fafafa;
 }
+
 .pill.status.todo { background: #f3f4f6; }
 .pill.status.doing { background: #fffbeb; border-color: #fde68a; }
 .pill.status.done { background: #f0fdf4; border-color: #bbf7d0; }
+
 .pill.prio.low { background: #eff6ff; border-color: #dbeafe; }
 .pill.prio.medium { background: #f5f5f5; }
 .pill.prio.high { background: #fff5f5; border-color: #ffd6d6; }
@@ -67,46 +124,82 @@
 
 .menu { display: flex; gap: 6px; }
 .icon-btn {
-  border: 1px solid #eee; background: #fff; border-radius: 12px;
-  padding: 8px 10px; cursor: pointer;
+  border: 1px solid #eee;
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
 }
 .icon-btn:hover { background: #fafafa; }
 .icon-btn.danger:hover { background: #fff5f5; border-color: #ffd6d6; }
 
 .state, .empty {
-  border: 1px dashed #e6e6e6; border-radius: 18px; padding: 22px;
-  text-align: center; background: #fff; color: #444;
+  border: 1px dashed #e6e6e6;
+  border-radius: 18px;
+  padding: 22px;
+  text-align: center;
+  background: #fff;
+  color: #444;
 }
 
 .error {
-  margin: 10px 0 14px; padding: 10px 12px; border-radius: 12px;
-  background: #fff5f5; border: 1px solid #ffd6d6; color: #7a1f1f;
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff5f5;
+  border: 1px solid #ffd6d6;
+  color: #7a1f1f;
 }
 
 .spinner {
-  width: 22px; height: 22px; border: 3px solid #eee; border-top-color: #111;
-  border-radius: 50%; margin: 0 auto 10px; animation: spin 0.7s linear infinite;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #eee;
+  border-top-color: #111;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .modal-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
-  display: grid; place-items: center; padding: 20px; z-index: 1000;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 1000;
 }
+
 .modal {
   width: min(620px, 95vw);
-  background: #fff; border-radius: 18px; border: 1px solid #eee;
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #eee;
   box-shadow: 0 12px 30px rgba(0,0,0,0.18);
 }
+
 .modal-head {
-  padding: 14px 14px 10px; display: flex; justify-content: space-between;
-  align-items: center; border-bottom: 1px solid #eee;
+  padding: 14px 14px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
 }
+
 .modal-body { padding: 14px; display: grid; gap: 12px; }
 .modal-body label { display: grid; gap: 6px; color: #444; }
-.modal-body input, .modal-body textarea, .modal-body select {
-  padding: 10px 12px; border-radius: 12px; border: 1px solid #e6e6e6; outline: none;
+
+.modal-body input,
+.modal-body textarea,
+.modal-body select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  outline: none;
 }
+
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
 
