@@ -10,9 +10,9 @@ const TeamMember = require("./TeamMember");
 User.belongsTo(User, { as: "manager", foreignKey: "managerId" });
 User.hasMany(User, { as: "subordinates", foreignKey: "managerId" });
 
-// User ↔ Team
-Team.hasMany(User, { as: "members", foreignKey: "teamId" });
-User.belongsTo(Team, { as: "team", foreignKey: "teamId" });
+// User ↔ Team (one-to-many pe teamId din User) — ✅ alias schimbat ca să nu se bată cu many-to-many
+Team.hasMany(User, { as: "directMembers", foreignKey: "teamId" });
+User.belongsTo(Team, { as: "directTeam", foreignKey: "teamId" });
 
 // Team ↔ Project
 Team.hasMany(Project, { as: "projects", foreignKey: "teamId" });
@@ -46,7 +46,7 @@ Notification.belongsTo(Task, { as: "task", foreignKey: "taskId" });
 Notification.belongsTo(Project, { as: "project", foreignKey: "projectId" });
 Notification.belongsTo(User, { as: "sender", foreignKey: "fromUserId" });
 
-// Team ↔ User (many-to-many)
+// ✅ Team ↔ User (many-to-many) — păstrăm alias "members" aici!
 Team.belongsToMany(User, {
   through: TeamMember,
   foreignKey: "teamId",
@@ -61,4 +61,4 @@ User.belongsToMany(Team, {
   as: "teams",
 });
 
-module.exports = { User, Team, Project, Task, Comment, Notification,TeamMember };
+module.exports = { User, Team, Project, Task, Comment, Notification, TeamMember };
