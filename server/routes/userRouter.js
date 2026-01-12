@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
-const Task = require("../models/Task"); 
+const Task = require("../models/Task");
 const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -29,12 +29,20 @@ async function ensureManagerExists(managerId) {
   return manager;
 }
 
-
-  //GET /api/users
-
-router.get("/", requireRole("admin"), async (req, res, next) => {
+// GET /api/users
+// Admin: vede toti userii
+// Manager: vede doar executorii lui (ca sa-i poata aloca in echipe)
+router.get("/", requireRole("admin", "manager"), async (req, res, next) => {
   try {
+    const where = {};
+
+    if (normRole(req.user?.role) === "manager") {
+      where.role = "executor";
+      where.managerId = req.user.id;
+    }
+
     const users = await User.findAll({
+      where,
       attributes: { exclude: ["password"] },
       order: [["id", "ASC"]],
     });
@@ -46,9 +54,7 @@ router.get("/", requireRole("admin"), async (req, res, next) => {
   }
 });
 
-
-//GET /api/users/executors
-
+// GET /api/users/executors
 router.get("/executors", requireRole("admin", "manager"), async (req, res, next) => {
   try {
     const where = { role: "executor" };
@@ -70,9 +76,7 @@ router.get("/executors", requireRole("admin", "manager"), async (req, res, next)
   }
 });
 
-
- //GET /api/users/managers
- 
+// GET /api/users/managers
 router.get("/managers", requireRole("admin"), async (req, res, next) => {
   try {
     const users = await User.findAll({
@@ -118,7 +122,7 @@ router.post("/", requireRole("admin"), async (req, res, next) => {
       });
     }
 
-    // executor -> managerId 
+    // executor -> managerId
     if (payload.role === "executor") {
       const manager = await ensureManagerExists(payload.managerId);
       if (!manager) {
@@ -158,7 +162,7 @@ router.post("/", requireRole("admin"), async (req, res, next) => {
 
 /**
  * PUT /api/users/:id
- *DOAR ADMIN
+ * DOAR ADMIN
  */
 router.put("/:id", requireRole("admin"), async (req, res, next) => {
   try {
@@ -188,8 +192,7 @@ router.put("/:id", requireRole("admin"), async (req, res, next) => {
     }
 
     const finalRole = normRole(updates.role ?? user.role);
-    const finalManagerId =
-      updates.managerId !== undefined ? updates.managerId : user.managerId;
+    const finalManagerId = updates.managerId !== undefined ? updates.managerId : user.managerId;
 
     if (finalRole === "executor") {
       const manager = await ensureManagerExists(finalManagerId);
@@ -216,10 +219,8 @@ router.put("/:id", requireRole("admin"), async (req, res, next) => {
   }
 });
 
-
- // DELETE /api/users/:id
- //DOAR ADMIN
-
+// DELETE /api/users/:id
+// DOAR ADMIN
 router.delete("/:id", requireRole("admin"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
@@ -235,7 +236,8 @@ router.delete("/:id", requireRole("admin"), async (req, res, next) => {
         });
       }
     }
-    //stergere user cu task-uri alocate
+
+    // stergere user cu task-uri alocate
     const taskCount = await Task.count({ where: { userId: id } });
     if (taskCount > 0) {
       return res.status(400).json({
