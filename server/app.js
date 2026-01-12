@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-require("dotenv").config(); // pentru variabile .env
+require("dotenv").config(); 
 const sequelize = require("./sequelize");
 
 // Import routers
@@ -21,11 +21,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({ origin: "*" })); // Azure rulează frontendul de pe alt domeniu
+app.use(cors({ origin: "*" })); 
 app.use(express.json());
 
 
-// Health check endpoint (Azure folosește asta pentru monitorizare)
+// Health check endpoint 
 app.get("/", (req, res) => {
   res.status(200).send("Task Planner backend is running ✅");
 });

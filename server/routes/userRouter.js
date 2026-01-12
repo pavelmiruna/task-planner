@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const Task = require("../models/Task"); // optional: protecție la delete dacă are task-uri
 const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -16,9 +17,12 @@ function normRole(r) {
 }
 
 async function ensureManagerExists(managerId) {
-  if (!managerId) return null;
+  if (managerId === null || managerId === undefined || managerId === "") return null;
 
-  const manager = await User.findByPk(Number(managerId));
+  const id = Number(managerId);
+  if (!Number.isFinite(id)) return null;
+
+  const manager = await User.findByPk(id);
   if (!manager) return null;
 
   if (normRole(manager.role) !== "manager") return null;
@@ -27,8 +31,7 @@ async function ensureManagerExists(managerId) {
 
 /**
  * GET /api/users
- * ✅ Doar admin (mai safe)
- * (Dacă vrei și pentru manager, schimbă requireRole("admin") în requireRole("admin","manager"))
+ * ✅ DOAR ADMIN (mai safe)
  */
 router.get("/", requireRole("admin"), async (req, res, next) => {
   try {
@@ -46,12 +49,20 @@ router.get("/", requireRole("admin"), async (req, res, next) => {
 
 /**
  * GET /api/users/executors
- * ✅ util pentru manager/admin ca să poată aloca task-uri
+ * ✅ admin: vede toți executorii
+ * ✅ manager: vede doar executorii lui (managerId = req.user.id)
+ * ✅ util pentru dropdown assign în Tasks
  */
 router.get("/executors", requireRole("admin", "manager"), async (req, res, next) => {
   try {
+    const where = { role: "executor" };
+
+    if (normRole(req.user?.role) === "manager") {
+      where.managerId = req.user.id;
+    }
+
     const users = await User.findAll({
-      where: { role: "executor" },
+      where,
       attributes: { exclude: ["password"] },
       order: [["id", "ASC"]],
     });
@@ -64,6 +75,25 @@ router.get("/executors", requireRole("admin", "manager"), async (req, res, next)
 });
 
 /**
+ * GET /api/users/managers
+ * ✅ admin: listă manageri (pentru select când creezi executor)
+ */
+router.get("/managers", requireRole("admin"), async (req, res, next) => {
+  try {
+    const users = await User.findAll({
+      where: { role: "manager" },
+      attributes: { exclude: ["password"] },
+      order: [["id", "ASC"]],
+    });
+
+    res.json({ success: true, data: users });
+  } catch (error) {
+    console.error("Error fetching managers:", error);
+    next(error);
+  }
+});
+
+/**
  * POST /api/users
  * ✅ DOAR ADMIN
  * Cerință: executor trebuie să aibă managerId valid (un user cu rol 'manager')
@@ -71,6 +101,17 @@ router.get("/executors", requireRole("admin", "manager"), async (req, res, next)
 router.post("/", requireRole("admin"), async (req, res, next) => {
   try {
     const payload = { ...req.body };
+
+    // Validări minime
+    if (!payload.username || !String(payload.username).trim()) {
+      return res.status(400).json({ success: false, error: "Username este obligatoriu." });
+    }
+    if (!payload.email || !String(payload.email).trim() || !String(payload.email).includes("@")) {
+      return res.status(400).json({ success: false, error: "Email invalid / lipsă." });
+    }
+    if (!payload.password || String(payload.password).length < 4) {
+      return res.status(400).json({ success: false, error: "Parola trebuie să aibă minim 4 caractere." });
+    }
 
     // role default
     if (!payload.role) payload.role = "executor";
@@ -92,17 +133,24 @@ router.post("/", requireRole("admin"), async (req, res, next) => {
           error: "Executantul trebuie să aibă managerId valid (un user cu rol 'manager').",
         });
       }
+      payload.managerId = manager.id;
     } else {
-      // dacă nu e executor, managerId nu are sens (opțional)
       payload.managerId = null;
     }
 
-    // hash password dacă există
-    if (payload.password && typeof payload.password === "string") {
-      payload.password = await bcrypt.hash(payload.password, 10);
-    }
+    // hash password
+    payload.password = await bcrypt.hash(String(payload.password), 10);
 
-    const user = await User.create(payload);
+    const user = await User.create({
+      username: String(payload.username).trim(),
+      email: String(payload.email).trim(),
+      role: payload.role,
+      password: payload.password,
+      phone: payload.phone ?? null,
+      status: payload.status ?? "active",
+      teamId: payload.teamId ?? null,
+      managerId: payload.managerId,
+    });
 
     const safeUser = user.toJSON();
     delete safeUser.password;
@@ -121,7 +169,7 @@ router.post("/", requireRole("admin"), async (req, res, next) => {
  */
 router.put("/:id", requireRole("admin"), async (req, res, next) => {
   try {
-    const user = await User.findByPk(req.params.id);
+    const user = await User.findByPk(Number(req.params.id));
     if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
     const updates = { ...req.body };
@@ -140,18 +188,17 @@ router.put("/:id", requireRole("admin"), async (req, res, next) => {
 
     // dacă se schimbă parola -> hash
     if (updates.password && typeof updates.password === "string") {
+      if (String(updates.password).length < 4) {
+        return res.status(400).json({ success: false, error: "Parola trebuie să aibă minim 4 caractere." });
+      }
       updates.password = await bcrypt.hash(updates.password, 10);
     }
 
-    // rol final după update
-    const finalRole = updates.role ?? user.role;
-    const finalRoleNorm = normRole(finalRole);
-
-    // managerId final după update
+    const finalRole = normRole(updates.role ?? user.role);
     const finalManagerId =
       updates.managerId !== undefined ? updates.managerId : user.managerId;
 
-    if (finalRoleNorm === "executor") {
+    if (finalRole === "executor") {
       const manager = await ensureManagerExists(finalManagerId);
       if (!manager) {
         return res.status(400).json({
@@ -159,10 +206,8 @@ router.put("/:id", requireRole("admin"), async (req, res, next) => {
           error: "Executantul trebuie să aibă managerId valid (un user cu rol 'manager').",
         });
       }
-      // păstrează managerId (validat)
-      updates.managerId = Number(finalManagerId);
+      updates.managerId = manager.id;
     } else {
-      // nu e executor => managerId null (opțional)
       updates.managerId = null;
     }
 
@@ -182,6 +227,7 @@ router.put("/:id", requireRole("admin"), async (req, res, next) => {
  * DELETE /api/users/:id
  * ✅ DOAR ADMIN
  * Protecție: nu șterge manager dacă are executori alocați
+ * Opțional: nu șterge user dacă are task-uri alocate
  */
 router.delete("/:id", requireRole("admin"), async (req, res, next) => {
   try {
@@ -197,6 +243,15 @@ router.delete("/:id", requireRole("admin"), async (req, res, next) => {
           error: "Nu poți șterge un manager care are executori alocați. Reasignează-i întâi.",
         });
       }
+    }
+
+    // opțional: dacă vrei să nu ștergi user cu task-uri alocate
+    const taskCount = await Task.count({ where: { userId: id } });
+    if (taskCount > 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Nu poți șterge un user care are task-uri alocate. Reasignează task-urile întâi.",
+      });
     }
 
     await User.destroy({ where: { id } });

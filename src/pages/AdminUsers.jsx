@@ -57,7 +57,7 @@ export default function AdminUsers() {
 
   useEffect(() => {
     fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, []);
 
   const managers = useMemo(
@@ -96,7 +96,7 @@ export default function AdminUsers() {
       username: u.username ?? "",
       email: u.email ?? "",
       phone: u.phone ?? "",
-      password: "", // nu afișăm parola existentă
+      password: "", 
       role: normalizeRole(u.role),
       managerId: u.managerId ? String(u.managerId) : "",
     });
@@ -146,7 +146,6 @@ export default function AdminUsers() {
         const payload = { ...payloadBase, password: draft.password.trim() };
         await api.post("/users", payload);
       } else {
-        // la edit, parola e opțională
         const payload = draft.password.trim()
           ? { ...payloadBase, password: draft.password.trim() }
           : payloadBase;

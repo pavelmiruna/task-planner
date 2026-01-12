@@ -7,7 +7,7 @@ const TeamMember = sequelize.define(
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     teamId: { type: DataTypes.INTEGER, allowNull: false },
     userId: { type: DataTypes.INTEGER, allowNull: false },
-    role: { type: DataTypes.STRING(50), allowNull: true }, // opțional
+    role: { type: DataTypes.STRING(50), allowNull: true },
   },
   {
     indexes: [{ unique: true, fields: ["teamId", "userId"] }],

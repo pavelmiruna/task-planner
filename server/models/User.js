@@ -1,4 +1,3 @@
-// models/User.js
 const { DataTypes } = require("sequelize");
 const sequelize = require("../sequelize");
 
@@ -20,7 +19,6 @@ const User = sequelize.define(
     profilePicture: { type: DataTypes.STRING, allowNull: true },
     teamId: { type: DataTypes.INTEGER, allowNull: true },
 
-    // rămâne nullable în DB, dar validăm logic mai jos
     managerId: { type: DataTypes.INTEGER, allowNull: true },
   },
   {
@@ -28,12 +26,10 @@ const User = sequelize.define(
       managerRule() {
         const role = String(this.role || "").toLowerCase();
 
-        // executor -> obligatoriu managerId
         if (role === "executor" && !this.managerId) {
           throw new Error("Executor must have managerId.");
         }
 
-        // admin/manager -> NU trebuie să aibă managerId
         if ((role === "admin" || role === "manager") && this.managerId) {
           throw new Error("Admin/Manager must not have managerId.");
         }

@@ -69,7 +69,7 @@ async function run() {
       email: "ana@test.com",
       role: "executor",
       password: passwordHash,
-      managerId: manager.id, // ✅ cerință
+      managerId: manager.id, 
     });
 
     const executor2 = await User.create({

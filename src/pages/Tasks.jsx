@@ -101,7 +101,7 @@ export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  // ✅ NEW: executor filter (manager/admin)
+  // ✅ executor filter (manager/admin)
   const [executorFilter, setExecutorFilter] = useState("all"); // "all" | "<id>"
 
   // modal create (doar manager/admin)
@@ -152,13 +152,19 @@ export default function Tasks() {
 
     setUsersLoading(true);
     try {
-      const res = await api.get("/users");
+      // ✅ IMPORTANT:
+      // /users este admin-only la tine, deci manager nu vede lista.
+      // Folosește endpoint-ul dedicat: GET /api/users/executors (admin + manager).
+      const res = await api.get("/users/executors");
       const items = res?.data?.data ?? [];
       const list = Array.isArray(items) ? items : [];
+
+      // backend-ul deja filtrează executorii, dar păstrăm un guard
       const execs = list.filter((u) => normalizeRole(u.role) === "executor");
       setExecutors(execs);
     } catch (err) {
-      console.error("Eroare la preluare users/executors:", err);
+      console.error("Eroare la preluare executors:", err);
+      setExecutors([]); // ca să nu rămână stale
     } finally {
       setUsersLoading(false);
     }
@@ -211,7 +217,7 @@ export default function Tasks() {
       const okStatus = statusFilter === "all" || st === statusFilter;
       const okPrio = priorityFilter === "all" || pr === priorityFilter;
 
-      // ✅ NEW: filter by executor (manager/admin)
+      // ✅ filter by executor (manager/admin)
       const assignedId = getAssignedId(t);
       const okExecutor =
         !isManagerOrAdmin ||
@@ -382,7 +388,7 @@ export default function Tasks() {
             ))}
           </select>
 
-          {/* ✅ NEW: executor dropdown filter (manager/admin) */}
+          {/* ✅ executor dropdown filter (manager/admin) */}
           {isManagerOrAdmin && (
             <select
               value={executorFilter}

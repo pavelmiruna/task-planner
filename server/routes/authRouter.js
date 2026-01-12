@@ -7,7 +7,7 @@ const requireRole = require("../middleware/requireRole");
 
 const router = express.Router();
 
-/** Helpers */
+
 function signToken(user) {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is missing. Set it in .env / Render env vars.");
@@ -32,7 +32,7 @@ function signToken(user) {
  */
 router.get("/me", authMiddleware, async (req, res, next) => {
   try {
-    // req.user vine din token (id, role, username, email)
+    
     const user = await User.findByPk(req.user.id);
 
     if (!user) return res.status(401).json({ message: "User not found" });

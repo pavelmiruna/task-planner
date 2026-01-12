@@ -11,17 +11,24 @@ router.use(authMiddleware);
 
 const STATUSES = ["OPEN", "PENDING", "COMPLETED", "CLOSED"];
 
+function normRole(r) {
+  const v = String(r || "").toLowerCase();
+  return v;
+}
+
 function isManagerOrAdmin(req) {
-  return req.user?.role === "manager" || req.user?.role === "admin";
+  const r = normRole(req.user?.role);
+  return r === "manager" || r === "admin";
 }
 
 function isExecutor(req) {
-  return req.user?.role === "executor";
+  const r = normRole(req.user?.role);
+  return r === "executor";
 }
 
 async function getSubordinateIds(managerId) {
   const subs = await User.findAll({
-    where: { managerId },
+    where: { managerId: Number(managerId) },
     attributes: ["id"],
   });
   return subs.map((u) => u.id);
@@ -29,15 +36,15 @@ async function getSubordinateIds(managerId) {
 
 /**
  * GET /api/tasks
- * - executor: vede doar task-urile lui (poate filtra după projectId/status)
- * - manager/admin: vede task-urile subordonaților + OPEN nealocate (userId null) + poate filtra
+ * - executor: vede doar task-urile lui
+ * - manager/admin: vede task-urile subordonaților + OPEN nealocate (doar status OPEN)
  */
 router.get("/", async (req, res, next) => {
   try {
     const where = {};
 
     // Filtre opționale
-    if (req.query.projectId) where.projectId = req.query.projectId;
+    if (req.query.projectId) where.projectId = Number(req.query.projectId);
     if (req.query.status) {
       const s = String(req.query.status).toUpperCase();
       if (!STATUSES.includes(s)) {
@@ -47,15 +54,14 @@ router.get("/", async (req, res, next) => {
     }
 
     if (isExecutor(req)) {
-      // executantul vede doar task-urile lui
       where.userId = req.user.id;
     } else if (isManagerOrAdmin(req)) {
-      // manager/admin: taskurile echipei + OPEN nealocate
       const subIds = await getSubordinateIds(req.user.id);
 
+      // ✅ OPEN nealocate doar dacă sunt OPEN
       where[Op.or] = [
         { userId: { [Op.in]: subIds } },
-        { userId: null }, // OPEN nealocate
+        { userId: null, status: "OPEN" },
       ];
     } else {
       return res.status(403).json({ success: false, error: "Forbidden" });
@@ -74,13 +80,13 @@ router.get("/", async (req, res, next) => {
 
 /**
  * GET /api/tasks/my
- * executor: lista taskurilor curente (OPEN/PENDING/COMPLETED/CLOSED) - toate ale lui
+ * executor: taskurile lui
  */
 router.get("/my", requireRole("executor"), async (req, res, next) => {
   try {
     const where = { userId: req.user.id };
 
-    if (req.query.projectId) where.projectId = req.query.projectId;
+    if (req.query.projectId) where.projectId = Number(req.query.projectId);
     if (req.query.status) {
       const s = String(req.query.status).toUpperCase();
       if (!STATUSES.includes(s)) {
@@ -130,13 +136,12 @@ router.get("/executor/:userId/history", async (req, res, next) => {
       return res.status(400).json({ success: false, error: "Invalid userId" });
     }
 
-    // verifică că executorul e subordonatul managerului (admin poate vedea pe oricine)
-    if (req.user.role === "manager") {
+    if (normRole(req.user.role) === "manager") {
       const executor = await User.findByPk(executorId);
-      if (!executor || executor.role !== "executor") {
+      if (!executor || normRole(executor.role) !== "executor") {
         return res.status(404).json({ success: false, error: "Executor not found" });
       }
-      if (executor.managerId !== req.user.id) {
+      if (Number(executor.managerId) !== Number(req.user.id)) {
         return res.status(403).json({ success: false, error: "Not your subordinate" });
       }
     }
@@ -158,7 +163,6 @@ router.get("/executor/:userId/history", async (req, res, next) => {
 /**
  * POST /api/tasks
  * manager/admin creează task (OPEN)
- * Cerință: la creare, task are starea OPEN
  */
 router.post("/", async (req, res, next) => {
   try {
@@ -168,21 +172,27 @@ router.post("/", async (req, res, next) => {
 
     const payload = { ...req.body };
 
-    if (!payload.description || typeof payload.description !== "string") {
+    if (!payload.description || typeof payload.description !== "string" || !payload.description.trim()) {
       return res.status(400).json({ success: false, error: "description is required" });
     }
 
-    // impunem OPEN la creare
-    payload.status = "OPEN";
-    payload.progress = payload.progress ?? 0;
+    // ✅ impunem OPEN la creare
+    const createPayload = {
+      description: payload.description.trim(),
+      status: "OPEN",
+      priority: payload.priority,
+      progress: payload.progress ?? 0,
+      dueDate: payload.dueDate || null,
+      projectId: payload.projectId ? Number(payload.projectId) : null,
+      teamId: payload.teamId ? Number(payload.teamId) : null,
 
-    // La creare nu permitem alocarea directă prin body (ca să păstrăm fluxul)
-    payload.userId = null;
-    payload.assignedAt = null;
-    payload.completedAt = null;
+      // ✅ flux corect
+      userId: null,
+      assignedAt: null,
+      completedAt: null,
+    };
 
-    const task = await Task.create(payload);
-
+    const task = await Task.create(createPayload);
     res.status(201).json({ success: true, data: task });
   } catch (error) {
     next(error);
@@ -203,7 +213,6 @@ router.put("/:id/assign", async (req, res, next) => {
     const task = await Task.findByPk(req.params.id);
     if (!task) return res.status(404).json({ success: false, error: "Task not found" });
 
-    // Se poate aloca doar dacă e OPEN (nealocat)
     if (task.status !== "OPEN") {
       return res.status(400).json({ success: false, error: "Only OPEN tasks can be assigned" });
     }
@@ -214,12 +223,11 @@ router.put("/:id/assign", async (req, res, next) => {
     }
 
     const executor = await User.findByPk(executorId);
-    if (!executor || executor.role !== "executor") {
+    if (!executor || normRole(executor.role) !== "executor") {
       return res.status(400).json({ success: false, error: "userId must be an executor" });
     }
 
-    // managerul poate aloca doar subordonaților lui (admin poate la oricine)
-    if (req.user.role === "manager" && executor.managerId !== req.user.id) {
+    if (normRole(req.user.role) === "manager" && Number(executor.managerId) !== Number(req.user.id)) {
       return res.status(403).json({ success: false, error: "You can assign tasks only to your executors" });
     }
 
@@ -238,15 +246,14 @@ router.put("/:id/assign", async (req, res, next) => {
 
 /**
  * PUT /api/tasks/:id/complete
- * executor marchează realizat -> COMPLETED
+ * executor -> COMPLETED
  */
 router.put("/:id/complete", requireRole("executor"), async (req, res, next) => {
   try {
     const task = await Task.findByPk(req.params.id);
     if (!task) return res.status(404).json({ success: false, error: "Task not found" });
 
-    // poate completa doar task-ul lui
-    if (task.userId !== req.user.id) {
+    if (Number(task.userId) !== Number(req.user.id)) {
       return res.status(403).json({ success: false, error: "You can complete only your tasks" });
     }
 
@@ -268,7 +275,7 @@ router.put("/:id/complete", requireRole("executor"), async (req, res, next) => {
 
 /**
  * PUT /api/tasks/:id/close
- * manager/admin marchează un task COMPLETED ca CLOSED
+ * manager/admin -> CLOSED
  */
 router.put("/:id/close", async (req, res, next) => {
   try {
@@ -283,13 +290,12 @@ router.put("/:id/close", async (req, res, next) => {
       return res.status(400).json({ success: false, error: "Only COMPLETED tasks can be closed" });
     }
 
-    // managerul poate închide doar task-uri ale subordonaților lui (admin poate orice)
-    if (req.user.role === "manager") {
+    if (normRole(req.user.role) === "manager") {
       if (!task.userId) {
         return res.status(400).json({ success: false, error: "Task has no executor assigned" });
       }
       const executor = await User.findByPk(task.userId);
-      if (!executor || executor.managerId !== req.user.id) {
+      if (!executor || Number(executor.managerId) !== Number(req.user.id)) {
         return res.status(403).json({ success: false, error: "Not your subordinate's task" });
       }
     }
@@ -303,8 +309,7 @@ router.put("/:id/close", async (req, res, next) => {
 
 /**
  * DELETE /api/tasks/:id
- * (opțional) doar manager/admin
- * Eu îl las doar pentru manager/admin ca să nu șteargă executantul task-uri aiurea.
+ * doar manager/admin
  */
 router.delete("/:id", async (req, res, next) => {
   try {
