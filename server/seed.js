@@ -1,17 +1,11 @@
+// server/seed.js
 require("dotenv").config();
 
 const bcrypt = require("bcryptjs");
 const sequelize = require("./sequelize");
 
-// Modele
-const Team = require("./models/Team");
-const User = require("./models/User");
-const Project = require("./models/Project");
-const Task = require("./models/Task");
-const TeamMember = require("./models/TeamMember");
-
-// Asocieri (IMPORTANT)
-require("./models/associations");
+// ✅ Modele + asocieri dintr-un singur loc
+const { User, Team, Project, Task, TeamMember } = require("./models/associations");
 
 function daysFromNow(n) {
   return new Date(Date.now() + n * 24 * 60 * 60 * 1000);
@@ -23,11 +17,18 @@ async function run() {
     await sequelize.authenticate();
     console.log("✅ DB connected");
 
-    console.log("🛠️ Syncing models...");
+    console.log("🛠️ Syncing models (force: true)...");
     await sequelize.sync({ force: true });
     console.log("✅ Sync done");
 
     console.log("🌱 Seeding...");
+
+    // Guard: dacă Task e cumva greșit importat, oprim seed-ul cu mesaj clar
+    if (!Task || Task.name !== "Task") {
+      throw new Error(
+        `Task model mismatch. Expected model name "Task", got "${Task?.name}". Check server/models/Task.js export & filename.`
+      );
+    }
 
     // 1) Teams
     const team1 = await Team.create({
@@ -40,31 +41,35 @@ async function run() {
       description: "Echipa de test Beta",
     });
 
-    // 2) Users (admin + manager + executori cu managerId)
-    const passwordHash = await bcrypt.hash("1234", 10);
+    // 2) Users
+    const plainPassword = process.env.SEED_PASSWORD || "1234";
+    const passwordHash = await bcrypt.hash(plainPassword, 10);
 
-    const admin = await User.create({
+    const adminPayload = {
       username: "andrei",
       email: "andrei@test.com",
       role: "admin",
       password: passwordHash,
-      managerId: null, // admin nu are manager
-    });
+      managerId: null,
+    };
 
-    const manager = await User.create({
+    const managerPayload = {
       username: "mihai",
       email: "mihai@test.com",
       role: "manager",
       password: passwordHash,
-      managerId: null, // manager nu are manager (în tema ta)
-    });
+      managerId: null,
+    };
+
+    const admin = await User.create(adminPayload);
+    const manager = await User.create(managerPayload);
 
     const executor1 = await User.create({
       username: "ana",
       email: "ana@test.com",
       role: "executor",
       password: passwordHash,
-      managerId: manager.id, // ✅ cerință: executor are manager
+      managerId: manager.id, // ✅ cerință
     });
 
     const executor2 = await User.create({
@@ -72,14 +77,12 @@ async function run() {
       email: "ioana@test.com",
       role: "executor",
       password: passwordHash,
-      managerId: manager.id, // ✅ cerință: executor are manager
+      managerId: manager.id, // ✅ cerință
     });
 
-    // 3) Team members (many-to-many)
-    // Team Alpha: manager + ana
+    // 3) Team members (many-to-many via TeamMember)
+    // alias în asocieri: Team.belongsToMany(User, { as: "members" })
     await team1.addMembers([manager, executor1]);
-
-    // Team Beta: admin + ioana (demo)
     await team2.addMembers([admin, executor2]);
 
     // 4) Projects
@@ -91,6 +94,7 @@ async function run() {
       progress: 10,
       teamId: team1.id,
       startDate: new Date(),
+      endDate: null,
     });
 
     const p2 = await Project.create({
@@ -101,11 +105,12 @@ async function run() {
       progress: 40,
       teamId: team2.id,
       startDate: new Date(),
+      endDate: null,
     });
 
-    // 5) Tasks (workflow corect: OPEN -> PENDING -> COMPLETED -> CLOSED)
+    // 5) Tasks (workflow OPEN -> PENDING -> COMPLETED -> CLOSED)
 
-    // OPEN -> nealocat
+    // OPEN (nealocat)
     const t1 = await Task.create({
       description: "Fă pagina Projects mai completă",
       status: "OPEN",
@@ -119,7 +124,7 @@ async function run() {
       completedAt: null,
     });
 
-    // PENDING -> alocat unui executor
+    // PENDING (alocat executor)
     const t2 = await Task.create({
       description: "Adaugă dropdown de teams în Projects modal",
       status: "PENDING",
@@ -133,7 +138,7 @@ async function run() {
       completedAt: null,
     });
 
-    // COMPLETED -> făcut de executor
+    // COMPLETED (executat)
     const t3 = await Task.create({
       description: "Curăță și testează endpoint-urile de tasks",
       status: "COMPLETED",
@@ -147,7 +152,7 @@ async function run() {
       completedAt: new Date(),
     });
 
-    // CLOSED -> manager a închis după completed
+    // CLOSED (închis după completed)
     const t4 = await Task.create({
       description: "Pregătește demo data pentru prezentare",
       status: "CLOSED",
@@ -177,14 +182,12 @@ async function run() {
       managerEmail: manager.email,
       executor1Email: executor1.email,
       executor2Email: executor2.email,
-      password: "1234",
+      password: plainPassword,
       sampleTasks: [t1.id, t2.id, t3.id, t4.id],
     });
-
-    process.exit(0);
   } catch (e) {
     console.error("❌ Seed error:", e);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     await sequelize.close();
   }
