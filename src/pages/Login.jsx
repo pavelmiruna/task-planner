@@ -22,7 +22,7 @@ export default function Login() {
         ? { email: emailOrUsername.trim(), password }
         : { username: emailOrUsername.trim(), password };
 
-      // ✅ login
+      // login
       const res = await api.post("/auth/login", payload);
       const token = res?.data?.data?.token;
 
@@ -32,7 +32,7 @@ export default function Login() {
 
       localStorage.setItem("token", token);
 
-      // ✅ me (la tine returnează { data: {...} })
+      // me 
       const meRes = await api.get("/auth/me");
       const me = meRes?.data?.data;
 
@@ -42,29 +42,26 @@ export default function Login() {
       localStorage.setItem("role", role);
       localStorage.setItem("userId", String(userId || ""));
 
-      // ✅ dacă userul venea de pe o pagină protejată, îl ducem înapoi acolo
+      // pagina protejata-> inapoi acolo
       const from = location.state?.from?.pathname;
 
-      // IMPORTANT: rutele tale reale sunt /dashboard, /tasks, etc.
-      // Nu folosi /manager/tasks sau /my-tasks dacă nu le ai în App.jsx.
+
       if (from && from !== "/login") {
         navigate(from, { replace: true });
         return;
       }
 
-      // ✅ redirect simplu, compatibil cu App.jsx-ul tău
+      // redirect 
       if (role === "admin") navigate("/admin/users", { replace: true });
       else navigate("/dashboard", { replace: true });
     } catch (err) {
       console.error("Login error:", err);
-      // backend trimite { message }, dar uneori ai { data: { message } } în alte rute
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         "Login failed";
       setError(msg);
 
-      // dacă ceva a mers pe jumătate, curățăm
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("userId");

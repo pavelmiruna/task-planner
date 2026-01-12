@@ -1,5 +1,5 @@
 function requireRole(...allowedRoles) {
-  // ✅ suport și pentru requireRole(["admin","manager"])
+  //suport pentru requireRole (admin, manager)
   const roles = Array.isArray(allowedRoles[0]) ? allowedRoles[0] : allowedRoles;
 
   return (req, res, next) => {

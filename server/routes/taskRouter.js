@@ -34,16 +34,13 @@ async function getSubordinateIds(managerId) {
   return subs.map((u) => u.id);
 }
 
-/**
- * GET /api/tasks
- * - executor: vede doar task-urile lui
- * - manager/admin: vede task-urile subordonaților + OPEN nealocate (doar status OPEN)
- */
+// GET /api/tasks
+
 router.get("/", async (req, res, next) => {
   try {
     const where = {};
 
-    // Filtre opționale
+    // Filtre optionale
     if (req.query.projectId) where.projectId = Number(req.query.projectId);
     if (req.query.status) {
       const s = String(req.query.status).toUpperCase();
@@ -58,7 +55,7 @@ router.get("/", async (req, res, next) => {
     } else if (isManagerOrAdmin(req)) {
       const subIds = await getSubordinateIds(req.user.id);
 
-      // ✅ OPEN nealocate doar dacă sunt OPEN
+      //OPEN nealocate doar daca sunt OPEN
       where[Op.or] = [
         { userId: { [Op.in]: subIds } },
         { userId: null, status: "OPEN" },
@@ -78,10 +75,9 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-/**
- * GET /api/tasks/my
- * executor: taskurile lui
- */
+
+//GET /api/tasks/my
+
 router.get("/my", requireRole("executor"), async (req, res, next) => {
   try {
     const where = { userId: req.user.id };
@@ -102,10 +98,9 @@ router.get("/my", requireRole("executor"), async (req, res, next) => {
   }
 });
 
-/**
- * GET /api/tasks/my/history
- * executor: istoric (COMPLETED + CLOSED)
- */
+
+  //GET /api/tasks/my/history
+
 router.get("/my/history", requireRole("executor"), async (req, res, next) => {
   try {
     const tasks = await Task.findAll({
@@ -123,7 +118,6 @@ router.get("/my/history", requireRole("executor"), async (req, res, next) => {
 
 /**
  * GET /api/tasks/executor/:userId/history
- * manager/admin: istoric pentru un executant (COMPLETED + CLOSED)
  */
 router.get("/executor/:userId/history", async (req, res, next) => {
   try {
@@ -160,10 +154,9 @@ router.get("/executor/:userId/history", async (req, res, next) => {
   }
 });
 
-/**
- * POST /api/tasks
- * manager/admin creează task (OPEN)
- */
+
+  //POST /api/tasks
+
 router.post("/", async (req, res, next) => {
   try {
     if (!isManagerOrAdmin(req)) {
@@ -176,7 +169,7 @@ router.post("/", async (req, res, next) => {
       return res.status(400).json({ success: false, error: "description is required" });
     }
 
-    // ✅ impunem OPEN la creare
+    //Open la creare
     const createPayload = {
       description: payload.description.trim(),
       status: "OPEN",
@@ -186,7 +179,7 @@ router.post("/", async (req, res, next) => {
       projectId: payload.projectId ? Number(payload.projectId) : null,
       teamId: payload.teamId ? Number(payload.teamId) : null,
 
-      // ✅ flux corect
+      //flux corect
       userId: null,
       assignedAt: null,
       completedAt: null,
@@ -199,11 +192,9 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-/**
- * PUT /api/tasks/:id/assign
- * manager/admin alocă task unui executant -> PENDING
- * Body: { userId: executorId }
- */
+
+ //PUT /api/tasks/:id/assign
+ 
 router.put("/:id/assign", async (req, res, next) => {
   try {
     if (!isManagerOrAdmin(req)) {
@@ -244,10 +235,9 @@ router.put("/:id/assign", async (req, res, next) => {
   }
 });
 
-/**
- * PUT /api/tasks/:id/complete
- * executor -> COMPLETED
- */
+
+ //PUT /api/tasks/:id/complete
+
 router.put("/:id/complete", requireRole("executor"), async (req, res, next) => {
   try {
     const task = await Task.findByPk(req.params.id);
@@ -273,10 +263,9 @@ router.put("/:id/complete", requireRole("executor"), async (req, res, next) => {
   }
 });
 
-/**
- * PUT /api/tasks/:id/close
- * manager/admin -> CLOSED
- */
+
+//  PUT /api/tasks/:id/close
+
 router.put("/:id/close", async (req, res, next) => {
   try {
     if (!isManagerOrAdmin(req)) {
@@ -307,10 +296,9 @@ router.put("/:id/close", async (req, res, next) => {
   }
 });
 
-/**
- * DELETE /api/tasks/:id
- * doar manager/admin
- */
+
+  //DELETE /api/tasks/:id
+
 router.delete("/:id", async (req, res, next) => {
   try {
     if (!isManagerOrAdmin(req)) {

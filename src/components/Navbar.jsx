@@ -13,11 +13,11 @@ export default function Navbar() {
   const close = () => setOpen(false);
   const navigate = useNavigate();
 
-  // ✅ trigger re-read when storage changes
+  // re-read cand storage se schimba
   const [authTick, setAuthTick] = useState(0);
   const { role, isLoggedIn } = useMemo(() => getAuth(), [authTick]);
 
-  // ✅ keep navbar in sync with localStorage (login/logout, refresh, multi-tab)
+  // navbar in sync cu (login/logout, refresh)
   useEffect(() => {
     const onStorage = () => setAuthTick((x) => x + 1);
     const onFocus = () => setAuthTick((x) => x + 1);
@@ -106,7 +106,7 @@ export default function Navbar() {
                 Tasks
               </NavLink>
 
-              {/* ✅ doar admin vede Users */}
+              {/*doar admin vede Users */}
               {role === "admin" && (
                 <NavLink
                   to="/admin/users"

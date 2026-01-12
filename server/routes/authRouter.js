@@ -27,8 +27,7 @@ function signToken(user) {
 
 /**
  * GET /api/auth/me
- * - Returnează user-ul autentificat (din token)
- * - authMiddleware pune payload-ul în req.user
+ * user-ul autentificat (din token)
  */
 router.get("/me", authMiddleware, async (req, res, next) => {
   try {
@@ -53,10 +52,6 @@ router.get("/me", authMiddleware, async (req, res, next) => {
 
 /**
  * POST /api/auth/register
- * Body: { username, email, password, role? }
- *
- * ⚠️ Atenție: conform cerințelor, ideal doar admin creează useri.
- * Acum e "public register". Dacă vrei doar admin, îți modific imediat.
  */
 router.post("/register", authMiddleware, requireRole("admin"), async (req, res, next) => { 
      try {
@@ -78,7 +73,7 @@ router.post("/register", authMiddleware, requireRole("admin"), async (req, res, 
     // hash password
     const hashed = await bcrypt.hash(String(password), 10);
 
-    // role default: executor
+    // rol default: executor
     const safeRole =
       role && ["admin", "manager", "executor"].includes(String(role).toLowerCase())
         ? String(role).toLowerCase()
@@ -112,7 +107,6 @@ router.post("/register", authMiddleware, requireRole("admin"), async (req, res, 
 
 /**
  * POST /api/auth/login
- * Body: { email, password } OR { username, password }
  */
 router.post("/login", async (req, res, next) => {
   try {
@@ -129,7 +123,6 @@ router.post("/login", async (req, res, next) => {
       return res.status(401).json({ message: "Credențiale invalide." });
     }
 
-    // suport pentru parole plain ("1234") + parole hash (bcrypt)
     const isOk =
       user.password?.startsWith("$2")
         ? await bcrypt.compare(String(password), user.password)

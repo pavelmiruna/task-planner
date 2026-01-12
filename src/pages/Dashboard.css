@@ -57,7 +57,7 @@
 }
 
 .card {
-  border: none; /* scoatem border-ul ca să arate ca în poză */
+  border: none; 
   border-radius: 22px;
   padding: 14px;
   color: #fff;

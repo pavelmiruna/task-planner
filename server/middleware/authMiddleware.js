@@ -4,7 +4,6 @@ function authMiddleware(req, res, next) {
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
 
-    // așteptăm format: "Bearer <token>"
     if (!authHeader || !String(authHeader).startsWith("Bearer ")) {
       return res.status(401).json({ message: "Missing token" });
     }
@@ -20,7 +19,7 @@ function authMiddleware(req, res, next) {
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    // punem utilizatorul pe request, ca să-l folosim în rute
+    // utilizatorul pe request->folosim în rute
     req.user = payload;
 
     return next();

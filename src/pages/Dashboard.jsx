@@ -51,7 +51,7 @@ export default function Dashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    // ✅ dacă nu ești logată, nu cere /projects (altfel 401)
+   
     if (!token) {
       setLoading(false);
       setProjects([]);

@@ -6,7 +6,7 @@ router.use(authMiddleware);
 const Team = require("../models/Team");
 const User = require("../models/User");
 
-// include: doar 3 atribute
+
 const membersInclude = [
   {
     model: User,
@@ -34,7 +34,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-// ✅ GET /api/teams/:id  (asta îți trebuie ca să nu mai fie 404)
+// GET /api/teams/:id
 router.get("/:id", async (req, res, next) => {
   try {
     const team = await Team.findByPk(req.params.id, { include: membersInclude });
@@ -93,7 +93,7 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
-// ✅ PUT /api/teams/:id/members
+// PUT /api/teams/:id/members
 router.put("/:id/members", async (req, res, next) => {
   try {
     const team = await Team.findByPk(req.params.id);

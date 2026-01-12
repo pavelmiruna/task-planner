@@ -19,7 +19,7 @@ export default function Profile() {
     setSuccess("");
 
     try {
-      // ✅ ia user-ul logat din token
+      // userul logat din token
       const res = await api.get("/auth/me");
       const me = res?.data?.data;
 
@@ -30,7 +30,7 @@ export default function Profile() {
         return;
       }
 
-      // ✅ ținem userId/role sincron (optional, dar util)
+     
       localStorage.setItem("userId", String(me.id));
       localStorage.setItem("role", String(me.role || "").toLowerCase());
 
@@ -46,7 +46,7 @@ export default function Profile() {
       setUser(null);
       setDraft(empty);
 
-      // dacă token e invalid, interceptorul din api.js te duce la /login
+      // token invalid-> login
       setError("Nu am putut identifica utilizatorul logat.");
     } finally {
       setLoading(false);
@@ -84,12 +84,12 @@ export default function Profile() {
     setSuccess("");
 
     try {
-      // ✅ update pe /users/:id (backend-ul tău are ruta asta)
+      // update pe /users/:id
       const res = await api.put(`/users/${user.id}`, {
         username: draft.username.trim(),
         email: draft.email.trim(),
         phone: draft.phone.trim() || null,
-        // role NU îl schimbăm din UI
+      
       });
 
       const updated = res?.data?.data;

@@ -4,7 +4,7 @@ import { api } from "../api/api";
 
 export default function ProtectedRoute({ children }) {
   const location = useLocation();
-  const [ok, setOk] = useState(null); // null=loading
+  const [ok, setOk] = useState(null); 
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -16,7 +16,6 @@ export default function ProtectedRoute({ children }) {
     api
       .get("/auth/me")
       .then((res) => {
-        // ATENȚIE: la tine /auth/me răspunde cu { data: { ... } }
         const me = res?.data?.data;
 
         if (!me?.id) {
@@ -30,12 +29,11 @@ export default function ProtectedRoute({ children }) {
         setOk(true);
       })
       .catch(() => {
-        // interceptorul de 401 din api.js va face redirect
         setOk(false);
       });
   }, []);
 
-  if (ok === null) return null; // sau un loader simplu
+  if (ok === null) return null; 
   if (!ok) return <Navigate to="/login" replace state={{ from: location }} />;
 
   return children;

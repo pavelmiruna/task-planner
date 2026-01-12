@@ -5,7 +5,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
   const location = useLocation();
 
-  // dacă vrei să NU apară pe login (în caz că nu ai hide în App)
+  // fara login
   if (location.pathname === "/login") return null;
 
   return (

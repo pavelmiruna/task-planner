@@ -71,7 +71,6 @@ function normalizePriority(p) {
   return "MEDIUM";
 }
 
-// încearcă mai multe nume posibile (în funcție de backend)
 function getAssignedId(t) {
   return (
     t?.userId ??
@@ -101,10 +100,10 @@ export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  // ✅ executor filter (manager/admin)
-  const [executorFilter, setExecutorFilter] = useState("all"); // "all" | "<id>"
+  // executor filter (manager/admin)
+  const [executorFilter, setExecutorFilter] = useState("all"); 
 
-  // modal create (doar manager/admin)
+  // modal create (manager/admin)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
   const [saving, setSaving] = useState(false);
@@ -113,12 +112,12 @@ export default function Tasks() {
   const [teams, setTeams] = useState([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
 
-  // executors dropdown (pentru assign + filtrare)
+  // executors dropdown ( assign + filtrare)
   const [executors, setExecutors] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
   // assign selection per taskId
-  const [assignToByTask, setAssignToByTask] = useState({}); // { [taskId]: executorId }
+  const [assignToByTask, setAssignToByTask] = useState({}); 
 
   const teamById = useMemo(() => {
     const map = new Map();
@@ -152,19 +151,17 @@ export default function Tasks() {
 
     setUsersLoading(true);
     try {
-      // ✅ IMPORTANT:
-      // /users este admin-only la tine, deci manager nu vede lista.
-      // Folosește endpoint-ul dedicat: GET /api/users/executors (admin + manager).
+      //  GET /api/users/executors (admin + manager).
       const res = await api.get("/users/executors");
       const items = res?.data?.data ?? [];
       const list = Array.isArray(items) ? items : [];
 
-      // backend-ul deja filtrează executorii, dar păstrăm un guard
+  
       const execs = list.filter((u) => normalizeRole(u.role) === "executor");
       setExecutors(execs);
     } catch (err) {
       console.error("Eroare la preluare executors:", err);
-      setExecutors([]); // ca să nu rămână stale
+      setExecutors([]); 
     } finally {
       setUsersLoading(false);
     }
@@ -196,12 +193,10 @@ export default function Tasks() {
   useEffect(() => {
     fetchTeams();
     fetchExecutors();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     fetchTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
@@ -217,7 +212,7 @@ export default function Tasks() {
       const okStatus = statusFilter === "all" || st === statusFilter;
       const okPrio = priorityFilter === "all" || pr === priorityFilter;
 
-      // ✅ filter by executor (manager/admin)
+      // filter by executor (manager/admin)
       const assignedId = getAssignedId(t);
       const okExecutor =
         !isManagerOrAdmin ||
@@ -388,7 +383,7 @@ export default function Tasks() {
             ))}
           </select>
 
-          {/* ✅ executor dropdown filter (manager/admin) */}
+          {/*executor dropdown (manager/admin) */}
           {isManagerOrAdmin && (
             <select
               value={executorFilter}
@@ -485,7 +480,7 @@ export default function Tasks() {
                   </div>
                 </div>
 
-                {/* Assign UI (manager/admin, doar când OPEN) */}
+                {/* Assign UI  */}
                 {canAssign && (
                   <div className="assign-row">
                     <select
@@ -534,7 +529,7 @@ export default function Tasks() {
         </div>
       )}
 
-      {/* Modal Create (doar manager/admin) */}
+      {/* Modal Create (manager/admin) */}
       {isModalOpen && isManagerOrAdmin && (
         <div className="modal-backdrop" onMouseDown={closeModal}>
           <div className="modal" onMouseDown={(e) => e.stopPropagation()}>

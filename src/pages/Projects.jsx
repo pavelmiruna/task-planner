@@ -67,7 +67,7 @@ function statusToPill(status) {
   if (s === "COMPLETED") return "pill done";
   if (s === "CLOSED") return "pill paused";
   if (s === "IN_PROGRESS") return "pill active";
-  return "pill active"; // OPEN
+  return "pill active"; 
 }
 
 function priorityToClass(priority) {
@@ -152,12 +152,10 @@ export default function Projects() {
 
   useEffect(() => {
     fetchTeams();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     fetchProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
   const filtered = useMemo(() => {
@@ -414,7 +412,7 @@ export default function Projects() {
         </div>
       )}
 
-      {/* Modal (doar manager/admin) */}
+      {/* Modal ( manager/admin) */}
       {isModalOpen && isManagerOrAdmin && (
         <div className="modal-backdrop" onMouseDown={closeModal}>
           <div className="modal" onMouseDown={(e) => e.stopPropagation()}>

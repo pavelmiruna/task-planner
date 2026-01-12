@@ -11,10 +11,10 @@ const projectRouter = require("./routes/projectRouter");
 const teamRouter = require("./routes/teamRouter");
 const authRouter = require("./routes/authRouter");
 
-// Asociațiile între modele
+// Asociatii intre modele
 require("./models/associations");
 
-// Middleware global de erori
+// Middleware erori
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
@@ -27,7 +27,7 @@ app.use(express.json());
 
 // Health check endpoint 
 app.get("/", (req, res) => {
-  res.status(200).send("Task Planner backend is running ✅");
+  res.status(200).send("Task Planner backend is running");
 });
 
 // API routes
@@ -39,25 +39,25 @@ app.use("/api/auth", authRouter);
 
 
 
-// Middleware de erori (trebuie pus DUPĂ rute!)
+// Middleware de erori 
 app.use(errorHandler);
 
 // Start server
 app.listen(PORT, async () => {
   try {
     await sequelize.authenticate();
-    console.log("✅ Database connected successfully");
+    console.log(" Database connected successfully");
 
-    // Sincronizare modele doar în dezvoltare
+    // Sincronizare modele in dezvoltare
     if (process.env.NODE_ENV !== "production") {
       await sequelize.sync({ alter: true });
-      console.log("🛠️ Models synchronized (development mode)");
+      console.log(" Models synchronized (development mode)");
     } else {
-      console.log("🏢 Production mode - no schema sync");
+      console.log(" Production mode - no schema sync");
     }
 
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
   } catch (error) {
-    console.error("❌ Database connection error:", error);
+    console.error(" Database connection error:", error);
   }
 });

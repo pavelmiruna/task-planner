@@ -1,10 +1,9 @@
-// server/seed.js
 require("dotenv").config();
 
 const bcrypt = require("bcryptjs");
 const sequelize = require("./sequelize");
 
-// ✅ Modele + asocieri dintr-un singur loc
+// Modele + asocieri 
 const { User, Team, Project, Task, TeamMember } = require("./models/associations");
 
 function daysFromNow(n) {
@@ -13,17 +12,17 @@ function daysFromNow(n) {
 
 async function run() {
   try {
-    console.log("🔌 Connecting DB...");
+    console.log(" Connecting DB...");
     await sequelize.authenticate();
-    console.log("✅ DB connected");
+    console.log(" DB connected");
 
-    console.log("🛠️ Syncing models (force: true)...");
+    console.log(" Syncing models (force: true)...");
     await sequelize.sync({ force: true });
-    console.log("✅ Sync done");
+    console.log(" Sync done");
 
-    console.log("🌱 Seeding...");
+    console.log(" Seeding...");
 
-    // Guard: dacă Task e cumva greșit importat, oprim seed-ul cu mesaj clar
+    // Guard
     if (!Task || Task.name !== "Task") {
       throw new Error(
         `Task model mismatch. Expected model name "Task", got "${Task?.name}". Check server/models/Task.js export & filename.`
@@ -77,11 +76,10 @@ async function run() {
       email: "ioana@test.com",
       role: "executor",
       password: passwordHash,
-      managerId: manager.id, // ✅ cerință
+      managerId: manager.id,
     });
 
-    // 3) Team members (many-to-many via TeamMember)
-    // alias în asocieri: Team.belongsToMany(User, { as: "members" })
+    // 3) Team members 
     await team1.addMembers([manager, executor1]);
     await team2.addMembers([admin, executor2]);
 
@@ -108,9 +106,9 @@ async function run() {
       endDate: null,
     });
 
-    // 5) Tasks (workflow OPEN -> PENDING -> COMPLETED -> CLOSED)
+    // 5) Tasks 
 
-    // OPEN (nealocat)
+    // OPEN 
     const t1 = await Task.create({
       description: "Fă pagina Projects mai completă",
       status: "OPEN",
@@ -124,7 +122,7 @@ async function run() {
       completedAt: null,
     });
 
-    // PENDING (alocat executor)
+    // PENDING 
     const t2 = await Task.create({
       description: "Adaugă dropdown de teams în Projects modal",
       status: "PENDING",
@@ -138,7 +136,7 @@ async function run() {
       completedAt: null,
     });
 
-    // COMPLETED (executat)
+    // COMPLETED 
     const t3 = await Task.create({
       description: "Curăță și testează endpoint-urile de tasks",
       status: "COMPLETED",
@@ -152,7 +150,7 @@ async function run() {
       completedAt: new Date(),
     });
 
-    // CLOSED (închis după completed)
+    // CLOSED 
     const t4 = await Task.create({
       description: "Pregătește demo data pentru prezentare",
       status: "CLOSED",
@@ -172,7 +170,7 @@ async function run() {
     const projectCount = await Project.count();
     const taskCount = await Task.count();
 
-    console.log("✅ Seed done!");
+    console.log(" Seed done!");
     console.log({
       teamCount,
       userCount,
@@ -186,7 +184,7 @@ async function run() {
       sampleTasks: [t1.id, t2.id, t3.id, t4.id],
     });
   } catch (e) {
-    console.error("❌ Seed error:", e);
+    console.error(" Seed error:", e);
     process.exitCode = 1;
   } finally {
     await sequelize.close();

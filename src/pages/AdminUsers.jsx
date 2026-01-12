@@ -34,7 +34,7 @@ export default function AdminUsers() {
 
   // modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mode, setMode] = useState("create"); // create | edit
+  const [mode, setMode] = useState("create"); 
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState(emptyDraft);
 

@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
-const Task = require("../models/Task"); // optional: protecție la delete dacă are task-uri
+const Task = require("../models/Task"); 
 const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -29,10 +29,9 @@ async function ensureManagerExists(managerId) {
   return manager;
 }
 
-/**
- * GET /api/users
- * ✅ DOAR ADMIN (mai safe)
- */
+
+  //GET /api/users
+
 router.get("/", requireRole("admin"), async (req, res, next) => {
   try {
     const users = await User.findAll({
@@ -47,12 +46,9 @@ router.get("/", requireRole("admin"), async (req, res, next) => {
   }
 });
 
-/**
- * GET /api/users/executors
- * ✅ admin: vede toți executorii
- * ✅ manager: vede doar executorii lui (managerId = req.user.id)
- * ✅ util pentru dropdown assign în Tasks
- */
+
+//GET /api/users/executors
+
 router.get("/executors", requireRole("admin", "manager"), async (req, res, next) => {
   try {
     const where = { role: "executor" };
@@ -74,10 +70,9 @@ router.get("/executors", requireRole("admin", "manager"), async (req, res, next)
   }
 });
 
-/**
- * GET /api/users/managers
- * ✅ admin: listă manageri (pentru select când creezi executor)
- */
+
+ //GET /api/users/managers
+ 
 router.get("/managers", requireRole("admin"), async (req, res, next) => {
   try {
     const users = await User.findAll({
@@ -95,14 +90,13 @@ router.get("/managers", requireRole("admin"), async (req, res, next) => {
 
 /**
  * POST /api/users
- * ✅ DOAR ADMIN
- * Cerință: executor trebuie să aibă managerId valid (un user cu rol 'manager')
+ * DOAR ADMIN
  */
 router.post("/", requireRole("admin"), async (req, res, next) => {
   try {
     const payload = { ...req.body };
 
-    // Validări minime
+    // validari
     if (!payload.username || !String(payload.username).trim()) {
       return res.status(400).json({ success: false, error: "Username este obligatoriu." });
     }
@@ -124,7 +118,7 @@ router.post("/", requireRole("admin"), async (req, res, next) => {
       });
     }
 
-    // executor -> managerId obligatoriu și valid
+    // executor -> managerId 
     if (payload.role === "executor") {
       const manager = await ensureManagerExists(payload.managerId);
       if (!manager) {
@@ -164,8 +158,7 @@ router.post("/", requireRole("admin"), async (req, res, next) => {
 
 /**
  * PUT /api/users/:id
- * ✅ DOAR ADMIN
- * Cerință: dacă rolul final e executor => managerId valid
+ *DOAR ADMIN
  */
 router.put("/:id", requireRole("admin"), async (req, res, next) => {
   try {
@@ -175,7 +168,7 @@ router.put("/:id", requireRole("admin"), async (req, res, next) => {
     const updates = { ...req.body };
     delete updates.id;
 
-    // dacă se trimite role, validează
+    // role validare
     if (updates.role !== undefined) {
       updates.role = normRole(updates.role);
       if (!updates.role) {
@@ -186,7 +179,7 @@ router.put("/:id", requireRole("admin"), async (req, res, next) => {
       }
     }
 
-    // dacă se schimbă parola -> hash
+    // schimbare parola -> hash
     if (updates.password && typeof updates.password === "string") {
       if (String(updates.password).length < 4) {
         return res.status(400).json({ success: false, error: "Parola trebuie să aibă minim 4 caractere." });
@@ -223,12 +216,10 @@ router.put("/:id", requireRole("admin"), async (req, res, next) => {
   }
 });
 
-/**
- * DELETE /api/users/:id
- * ✅ DOAR ADMIN
- * Protecție: nu șterge manager dacă are executori alocați
- * Opțional: nu șterge user dacă are task-uri alocate
- */
+
+ // DELETE /api/users/:id
+ //DOAR ADMIN
+
 router.delete("/:id", requireRole("admin"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
@@ -244,8 +235,7 @@ router.delete("/:id", requireRole("admin"), async (req, res, next) => {
         });
       }
     }
-
-    // opțional: dacă vrei să nu ștergi user cu task-uri alocate
+    //stergere user cu task-uri alocate
     const taskCount = await Task.count({ where: { userId: id } });
     if (taskCount > 0) {
       return res.status(400).json({

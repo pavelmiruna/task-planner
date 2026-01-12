@@ -13,7 +13,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ✅ dacă token invalid/expirat => 401 => curățăm storage și redirect la login
+// token invalid  curat storage + redirect la login
 api.interceptors.response.use(
   (res) => res,
   (error) => {

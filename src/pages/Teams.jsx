@@ -18,7 +18,7 @@ export default function Teams() {
   const [query, setQuery] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mode, setMode] = useState("create"); // create | edit
+  const [mode, setMode] = useState("create"); 
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState(emptyDraft);
   const [saving, setSaving] = useState(false);
@@ -59,7 +59,6 @@ export default function Teams() {
       setUsers(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error("Eroare la preluare users:", err);
-      // nu blocăm pagina de teams dacă users pică
     } finally {
       setUsersLoading(false);
     }
@@ -68,7 +67,6 @@ export default function Teams() {
   useEffect(() => {
     fetchTeams();
     fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
@@ -165,7 +163,7 @@ export default function Teams() {
 
     try {
       if (mode === "create") {
-        // 1) creăm team
+        // 1) create team
         const res = await api.post("/teams", {
           name: draft.name.trim(),
           description: draft.description.trim(),
@@ -174,7 +172,7 @@ export default function Teams() {
         const created = res?.data?.data;
         const newId = created?.id;
 
-        // 2) setăm members
+        // 2) setam members
         if (newId) {
           await saveMembers(newId, draft.memberIds);
         }
@@ -314,7 +312,7 @@ export default function Teams() {
         </div>
       )}
 
-      {/* Modal doar pentru admin/manager */}
+      {/* Modal pt admin/manager */}
       {isModalOpen && canManageTeams && (
         <div className="modal-backdrop" onMouseDown={closeModal}>
           <div className="modal" onMouseDown={(e) => e.stopPropagation()}>

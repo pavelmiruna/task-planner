@@ -32,7 +32,7 @@ function App() {
     <Router>
       <Shell>
         <Routes>
-          {/* / -> dashboard dacă e logat, altfel login */}
+          {/* / -> dashboard daca e logat, daca nu, login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* public */}
