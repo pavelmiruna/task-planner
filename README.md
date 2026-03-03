@@ -79,5 +79,15 @@ https://task-planner-xz0h.onrender.com
 ## 🛠 Local Setup
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/pavelmiruna/task-planner.git
+```bash
+git clone https://github.com/pavelmiruna/task-planner.git
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Run the server:
+```bash
+npm start
+```
